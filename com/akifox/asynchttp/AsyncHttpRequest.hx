@@ -63,6 +63,10 @@ class AsyncHttpRequest
 		_responseF = responseF;
 	}
 
+	public function toString():String {
+		return '[AsyncHttpRequest <$_fingerprint> ($_method $_url)]';
+	}
+
 	public function send() {
 		AsyncHttp.send(this);
 	}

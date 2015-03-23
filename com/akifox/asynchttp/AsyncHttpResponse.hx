@@ -57,6 +57,10 @@ class AsyncHttpResponse {
 		_time = time;
 	}
 
+	public function toString():String {
+		return '[AsyncHttpResponse <$_fingerprint> (status $_status, $_contentLength bytes in $_time sec)]';
+	}
+
 	
 	public var contentJson(get,never):String;
 	private function get_contentJson():String {
