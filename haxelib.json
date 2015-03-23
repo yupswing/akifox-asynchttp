@@ -1,0 +1,11 @@
+{     
+  "name": "akifox-asynchttp",
+  "url" : "https://github.com/yupswing/akifox-asynchttp",
+  "license": "MIT",
+  "tags": ["openfl","cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
+  "description": "Asynchronous HTTP/1.1 Requests",
+  "version": "0.2.0",
+  "releasenote": "First haxelib release",
+  "contributors": ["yupswing"],
+  "dependencies": {"openfl" : ""}
+}

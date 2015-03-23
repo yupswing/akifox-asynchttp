@@ -1,45 +1,3 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.2.0-brightgreen.svg)]()
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
-[![OpenFL 2](https://img.shields.io/badge/require-OpenFL 2-red.svg)](http://www.openfl.org)
-[![Cross platform](https://img.shields.io/badge/platform-cross%20platform-lightgrey.svg)](http://www.openfl.org)
-
-[![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.2.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-
-# akifox-asynchttp (com.akifox.asynchttp.*)
-**HAXE/OpenFL Asynchronous HTTP Request library**
-
-The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (neko, cpp, java) and the openfl.net.URLLoader when multi-threading is not available (ie: js,flash).
-
-
-## Install
-
-You can easily install the library thru haxelib
-
-```
-haxelib install akifox-asynchttp
-```
-
-In your project add the library reference in your ```project.xml```
-
-```
-<haxelib name="akifox-asynchttp" />
-```
-
-and finally you can import it in your project class with this import
-```
-import com.akifox.asynchttp.*;
-```
-
-## Using the library
-
-This is an easy example the shows how to use the library. [Check it out](/samples/simple/)
-**Note** *the all the request are asynchronous, so the callback function could not be called in the same order as the request were sent.*
-
-
-Here is the example:
-````haxe
 package ;
 import com.akifox.asynchttp.*;
 
@@ -131,17 +89,3 @@ class Main {
 		}
    }
 }
-````
-
-
-#### AsyncHTTP library
-- [x] Multi-threading on available targets
-- [x] Fallback on URLLoader when multi-threading not available
-- [x] Support standard methods (GET, POST)
-- [x] Support restful methods (PUT, DELETE)
-- [x] Support standard transfer mode (HTTP/1.0)
-- [x] Support chunked transfer mode (HTTP/1.1)
-- [ ] Parsing
-  - [x] Json
-  - [ ] XML
-- [ ] Manage multiple requests in a single thread (to compact)
