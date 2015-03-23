@@ -62,8 +62,8 @@ class AsyncHttpResponse {
 	}
 
 	
-	public var contentJson(get,never):String;
-	private function get_contentJson():String {
+	public var contentJson(get,never):Dynamic;
+	private function get_contentJson():Dynamic {
 		var _contentJson:Dynamic;
 		try {
 			_contentJson = haxe.Json.parse(_content);
