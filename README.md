@@ -12,6 +12,13 @@
 
 The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (neko, cpp, java) and the openfl.net.URLLoader when multi-threading is not available (ie: js,flash).
 
+### Inspiration
+
+I've taken inspiration to write this library from this snippet by Raivof
+https://gist.github.com/raivof/dcdb1d74f93d17132a1e
+
+Thanks mate!
+
 
 ## Install
 
@@ -35,6 +42,7 @@ import com.akifox.asynchttp.*;
 ## Using the library
 
 This is an easy example the shows how to use the library. [Check it out](/samples/simple/)
+
 **Note** *the all the request are asynchronous, so the callback function could not be called in the same order as the request were sent.*
 
 
