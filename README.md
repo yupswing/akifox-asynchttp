@@ -5,7 +5,7 @@
 [![Cross platform](https://img.shields.io/badge/platform-cross%20platform-lightgrey.svg)](http://www.openfl.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.2.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.2.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE/OpenFL Asynchronous HTTP Request library**
