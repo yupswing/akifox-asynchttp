@@ -6,7 +6,7 @@ package com.akifox.asynchttp;
 
 @licence MIT Licence
 
-@version 0.2
+@version 0.2.1
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
 #### Asyncronous HTTP Request HAXE/OpenFL Library
