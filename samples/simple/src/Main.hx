@@ -27,8 +27,8 @@ class Main {
 		// --------------------------------------------------------------------------------------------------
 
 
-		// This is a basic POST example with no handler and no content
-		// not very useful since there is no handler to get the response but it works getting a status 200
+		// This is a basic GET example with no handler and no content
+		// not very useful, since there is no handler to get the response, but it works getting a status 200
 		// (if the connection is available, otherwise status 0)
 		var url = "http://www.google.com";
 		var request = new AsyncHttpRequest(
@@ -76,7 +76,7 @@ class Main {
    function wikipediaPage(response:AsyncHttpResponse) {
    		// check the fingerprint to identify a specific request for this handler
    		if (wikipediaHaxeFingerprint == response.fingerprint) {
-   			trace(response.fingerprint + ' EXAMPLE > hey, this was the Haxe Wikipedia page request!');
+   			trace(response.fingerprint + ' EXAMPLE > HEY, this was the Haxe Wikipedia page request!');
    		}
 
 
@@ -85,7 +85,7 @@ class Main {
 			// there were no response
 			trace(response.fingerprint + ' EXAMPLE > Wikipedia: error');
 		} else {
-			trace(response.fingerprint + ' EXAMPLE > Wikidedia: done');
+			trace(response.fingerprint + ' EXAMPLE > Wikipedia: done');
 		}
    }
 }

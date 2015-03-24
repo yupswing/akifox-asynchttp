@@ -14,7 +14,7 @@ The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request i
 
 ### Inspiration
 
-I've taken inspiration to write this library from this snippet by Raivof
+I've taken inspiration to write the library from this snippet by Raivof
 https://gist.github.com/raivof/dcdb1d74f93d17132a1e
 
 Thanks mate!
@@ -28,13 +28,13 @@ You can easily install the library thru haxelib
 haxelib install akifox-asynchttp
 ```
 
-In your project add the library reference in your ```project.xml```
+Add the library reference in your ```project.xml```
 
 ```
 <haxelib name="akifox-asynchttp" />
 ```
 
-and finally you can import it in your project class with this import
+and finally you can import it in your project files
 ```
 import com.akifox.asynchttp.*;
 ```
@@ -43,10 +43,8 @@ import com.akifox.asynchttp.*;
 
 This is an easy example the shows how to use the library. [Check it out](/samples/simple/)
 
-**Note** *the all the request are asynchronous, so the callback function could not be called in the same order as the request were sent.*
+**Note:** *all the requests are asynchronous, so obviously the callback functions could not be called in the same order as the requests are sent.*
 
-
-Here is the example:
 ````haxe
 package ;
 import com.akifox.asynchttp.*;
@@ -77,8 +75,8 @@ class Main {
 		// --------------------------------------------------------------------------------------------------
 
 
-		// This is a basic POST example with no handler and no content
-		// not very useful since there is no handler to get the response but it works getting a status 200
+		// This is a basic GET example with no handler and no content
+		// not very useful, since there is no handler to get the response, but it works getting a status 200
 		// (if the connection is available, otherwise status 0)
 		var url = "http://www.google.com";
 		var request = new AsyncHttpRequest(
@@ -126,7 +124,7 @@ class Main {
    function wikipediaPage(response:AsyncHttpResponse) {
    		// check the fingerprint to identify a specific request for this handler
    		if (wikipediaHaxeFingerprint == response.fingerprint) {
-   			trace(response.fingerprint + ' EXAMPLE > hey, this was the Haxe Wikipedia page request!');
+   			trace(response.fingerprint + ' EXAMPLE > HEY, this was the Haxe Wikipedia page request!');
    		}
 
 
@@ -135,7 +133,7 @@ class Main {
 			// there were no response
 			trace(response.fingerprint + ' EXAMPLE > Wikipedia: error');
 		} else {
-			trace(response.fingerprint + ' EXAMPLE > Wikidedia: done');
+			trace(response.fingerprint + ' EXAMPLE > Wikipedia: done');
 		}
    }
 }
