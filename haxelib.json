@@ -4,7 +4,7 @@
   "license": "MIT",
   "tags": ["openfl","cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
   "description": "Asynchronous HTTP/1.1 Requests",
-  "version": "0.2.1",
+  "version": "0.2.2dev",
   "releasenote": "Fix major bug in json parsing",
   "contributors": ["yupswing"],
   "dependencies": {"openfl" : ""}
