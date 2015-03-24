@@ -5,11 +5,9 @@
     <app main="Main" path="bin" file="transform-example-interactive" />
 
 	<window fps="60" background="0x333333" />
-	<window width="200" height="100" resizable="true" unless="mobile" />
+	<window width="200" height="100" resizable="false" unless="mobile" />
 	<window fullscreen="true" if="mobile" />
 	<window orientation="landscape" />
-	<window vsync="true" antialiasing="4" if="cpp" />
-	<window hardware="true" allow-shaders="true" require-shaders="true" if="cpp"/>
 	
 	<source path="src" />
 	
