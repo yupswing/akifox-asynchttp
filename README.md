@@ -39,6 +39,20 @@ and finally you can import it in your project files
 import com.akifox.asynchttp.*;
 ```
 
+## Features
+- [x] Multi-threading on available targets
+- [x] Fallback on URLLoader when multi-threading not available
+- [x] Support standard methods (GET, POST)
+- [x] Support restful methods (PUT, DELETE)
+- [x] Support standard transfer mode (HTTP/1.0)
+- [x] Support chunked transfer mode (HTTP/1.1)
+- [ ] Parsing based on content-type
+- [ ] Parsing
+  - [x] Json
+  - [ ] XML
+  - [ ] Others?
+- [ ] Manage multiple requests in a single thread (to compact)
+
 ## Using the library
 
 This is an easy example the shows how to use the library. [Check it out](/samples/simple/)
@@ -138,16 +152,3 @@ class Main {
    }
 }
 ````
-
-
-#### AsyncHTTP library
-- [x] Multi-threading on available targets
-- [x] Fallback on URLLoader when multi-threading not available
-- [x] Support standard methods (GET, POST)
-- [x] Support restful methods (PUT, DELETE)
-- [x] Support standard transfer mode (HTTP/1.0)
-- [x] Support chunked transfer mode (HTTP/1.1)
-- [ ] Parsing
-  - [x] Json
-  - [ ] XML
-- [ ] Manage multiple requests in a single thread (to compact)
