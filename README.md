@@ -49,7 +49,7 @@ import com.akifox.asynchttp.*;
 - [ ] Parsing based on content-type
 - [ ] Parsing
   - [x] Json
-  - [ ] XML
+  - [x] XML
   - [ ] Others?
 - [ ] Manage multiple requests in a single thread (to compact)
 
