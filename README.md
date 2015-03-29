@@ -7,9 +7,7 @@
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
 
-The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (neko, cpp, java) and the flash.net.URLLoader on flash target.
-
-*Javascript support is on the way*
+The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (Neko, CPP, Java), the flash.net.URLLoader on Flash target and haxe.Http on Javascript target.
 
 ### Inspiration
 
@@ -280,7 +278,7 @@ It will handle binary file (i.e. Images, Zip...) or text file (i.e. Html, Xml, J
 **NOTE:** *Take care of the path on different platforms!*
 
 ````haxe
-request.callback = function(response:AsynchHttpResponse->Void) {
+request.callback = function(response:AsynchHttpResponse):Void {
 					 var file = sys.io.File.write("/the/path/you/want/"+response.filename,response.contentIsBinary);
 		             try { 
 		                file.write(response.contentRaw); 
