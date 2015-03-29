@@ -3,15 +3,15 @@ import com.akifox.asynchttp.*;
 
 class Main {
 
-    static function main() {
+	static function main() {
 
-   		// The output log is going to be pretty chaotic because of multi-threading
-   		// At the beginning of every line there will be an 8 char string that identify
-   		// the request (and so the thread)
+		// The output log is going to be pretty chaotic because of multi-threading
+		// At the beginning of every line there will be an 8 char string that identify
+		// the request (and so the thread)
 
-   		runRequests();
+		runRequests();
 
-   		#if sys
+		#if sys
 		var input = Sys.stdin().readLine();
 		trace('Goodbye!');
 		#end

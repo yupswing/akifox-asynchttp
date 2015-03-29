@@ -4,16 +4,16 @@ import StringTools;
 
 class AsyncHttpExample {
 
-    static function setContent(id,content) {
-        var d = js.Browser.document.getElementById(id);
-        if( d == null )
-            js.Lib.alert("Unknown element : "+id);
-        d.innerHTML = content;
-    }
+	static function setContent(id,content) {
+		var d = js.Browser.document.getElementById(id);
+		if( d == null )
+		js.Lib.alert("Unknown element : "+id);
+		d.innerHTML = content;
+	}
 
-    static function main() {
+	static function main() {
 
-   		// Force log to console (usually enabled only on -debug)
+		// Force log to console (usually enabled only on -debug)
 		AsyncHttp.logEnabled = true;
 
    		// Force not throwing errors but trace (default disabled on -debug)
@@ -48,5 +48,5 @@ class AsyncHttpExample {
 			}
 		}).send();
 
-    }
+	}
 }
