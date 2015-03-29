@@ -1,8 +1,9 @@
 [![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.0-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
+
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.2.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.3.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
