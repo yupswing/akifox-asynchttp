@@ -8,10 +8,10 @@ class Main {
 
     static function main() {
 
-   		// Force log to console (usually enabled only on -debug)
+   	// Force log to console (usually enabled only on -debug)
 		AsyncHttp.logEnabled = true;
 
-   		// Force not throwing errors but trace (default disabled on -debug)
+   	// Force not throwing errors but trace (default disabled on -debug)
 		AsyncHttp.errorSafe = true;
 
    	#if sys
@@ -35,23 +35,22 @@ class Main {
 	}
 
    static function onResponse(response:AsyncHttpResponse):Void {
-   		trace('-------------------------');
+   	trace('-------------------------');
 		trace(response);
 		if (response.isOK) {
 			
-/*            if (response.isText)
-				trace('TEXT\n'+response.toText());
-            if (response.isJson)
-				trace('JSON\n'+response.toJson());
-            if (response.isXml)
-				trace('XML\n'+response.toXml());*/
+         /* if (response.isText)
+            trace('TEXT\n'+response.toText());
+         if (response.isJson)
+            trace('JSON\n'+response.toJson());
+         if (response.isXml)
+            trace('XML\n'+response.toXml());*/
 
 			trace("First 500 chars:");
 			trace(response.toText().substr(0,500));
 
             if (response.isBinary) {
             	//trace(response.content); // BYTES DATA
-            	//addChild(new openfl.display.Bitmap(response.toBitmapData()));
             	trace('[ Binary file <' + response.contentType + '> "' + response.filename + '" ' + Std.int(response.contentLength/1024*100)/100 + 'kb]');
             } else {
             	//trace(response.content); // STRING DATA
@@ -60,6 +59,6 @@ class Main {
 		} else {
 			trace('Response error status ' + response.status);
 		}
-   		trace('-------------------------');
+   	trace('-------------------------');
 	}
 }

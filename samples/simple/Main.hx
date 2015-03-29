@@ -40,13 +40,13 @@ class Main {
 
 		// This is a basic GET example that shows all the exposed variables
 		var request = new AsyncHttpRequest("http://www.apple.com",
-										   function(response:AsyncHttpResponse) {
-										   		if (response.isOK) {
-										   			trace('DONE (HTTP STATUS ${response.status})');
-										   		} else {
-										   			trace('ERROR (HTTP STATUS ${response.status})');
-										   		}
-										   }  
+								function(response:AsyncHttpResponse) {
+									if (response.isOK) {
+										trace('DONE (HTTP STATUS ${response.status})');
+									} else {
+										trace('ERROR (HTTP STATUS ${response.status})');
+									}
+								}  
 					      );
 		request.autoParse = false; // set autoParse to false (it is already the default)
 		request.send();
