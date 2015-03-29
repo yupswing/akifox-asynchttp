@@ -1,16 +1,15 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.2.2dev-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.0-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
-[![OpenFL 2](https://img.shields.io/badge/require-OpenFL 2%2F3-red.svg)](http://www.openfl.org)
-[![Cross platform](https://img.shields.io/badge/platform-cross%20platform-lightgrey.svg)](http://www.openfl.org)
-
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.2.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.2.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
-**HAXE/OpenFL Asynchronous HTTP Request library**
+**HAXE Asynchronous HTTP Request library**
 
-The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (neko, cpp, java) and the openfl.net.URLLoader when multi-threading is not available (ie: js,flash).
+The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (neko, cpp, java) and the flash.net.URLLoader on flash target.
+
+*Javascript support is on the way*
 
 ### Inspiration
 
@@ -20,7 +19,7 @@ https://gist.github.com/raivof/dcdb1d74f93d17132a1e
 Thanks mate!
 
 
-## Install
+## Install and use with Haxe
 
 You can easily install the library thru haxelib
 
@@ -28,7 +27,17 @@ You can easily install the library thru haxelib
 haxelib install akifox-asynchttp
 ```
 
-Add the library reference in your ```project.xml```
+import it in your project files
+```
+import com.akifox.asynchttp.*;
+```
+
+compile with
+```-lib akifox-asynchttp```
+
+
+### Use it in OpenFL Projects
+After installing the library via Haxelib, add the library reference in your ```project.xml```
 
 ```
 <haxelib name="akifox-asynchttp" />
@@ -40,115 +49,247 @@ import com.akifox.asynchttp.*;
 ```
 
 ## Features
-- [x] Multi-threading on available targets
-- [x] Fallback on URLLoader when multi-threading not available
-- [x] Support standard methods (GET, POST)
-- [x] Support restful methods (PUT, DELETE)
-- [x] Support standard transfer mode (HTTP/1.0)
-- [x] Support chunked transfer mode (HTTP/1.1)
-- [ ] Parsing based on content-type
-- [ ] Parsing
-  - [x] Json
-  - [x] XML
-  - [ ] Others?
-- [ ] Manage multiple requests in a single thread (to compact)
+- Target support
+  - [x] Neko+CPP+Java: Socket with multi-threading
+  - [x] Flash: flash.net.URLLoader
+  - [x] Javascript: XmlHttpRequest
+  - [ ] Other platforms?
+- HTTP Protocol Support
+  - Request methods
+    - [x] Support standard methods (GET, POST)
+    - [x] Support restful methods (PUT, DELETE)
+  - Transfer modes
+    - [x] Support unknown transfer mode (HTTP/1.x)
+    - [x] Support fixed content-length transfer mode (HTTP/1.x)
+    - [x] Support chunked transfer mode (HTTP/1.1)
+  - [x] Support redirect (Status 301,302,303,307)
+- Parsing
+  - [ ] Parsing based on content-type (autoParse option, default false) [disabled]
+  - [x] Json to Anonymous Structure
+  - [x] XML to Xml object
+  - [x] Image (Png,Jpeg, Gif) to BitmapData object (only with OpenFL support)
+- Todo
+  - [ ] Manage multiple requests in a single thread (to compact)
+  - [ ] HTTPS support (with SSL Socket)
+  - [ ] Test socket solution on Flash target
+  - [ ] Avoid redirect looping between urls (keep a list and check if one is recurring)
 
-## Using the library
+## What's new (0.2 to 0.3) [breaking API]
 
-This is an easy example the shows how to use the library. [Check it out](/samples/simple/)
+- The library doesn't rely on OpenFL anymore and it is a pure Haxe library!
+- Flash target use the default URLLoader (async)
+- Javascript target use the default Haxe.Http (async XmlHttpRequest)
+- The content (both on request and response) is now fully functional.
+- The library is now thread-safe (major problems in 0.2)
+- Support for redirection (HTTP STATUS 30x)
+- Using sockets make requests around 50% faster than OpenFL URLLoader
 
-**Note:** *all the requests are asynchronous, so obviously the callback functions could not be called in the same order as the requests are sent.*
+## Important notes
+
+**FLASH**: isBinary is always TRUE on the response object, the headers are always empty and don't rely on contentType
+
+**JAVASCRIPT**: isBinary is always FALSE on the response object, the headers are always empty and don't rely on contentType
+
+On both platforms you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
+
+**ALL PLATFORMS**: autoParse is temporarily disabled globally because of some threading problems.
+
+## Examples
+
+### Simple example with concurrent multiple requests
+[Check it out](/samples/simple/)
+
+The example shows how to handle multiple requests and responses
+
+### Interactive example
+[Check it out](/samples/interactive/)
+
+The example allow the user to try any URL to see the behaviour of the library with redirects, errors and his own urls.
+
+### Javascript example
+[Check it out](/samples/javascript/) 
+
+A simple example in javascript that shows
+
+### OpenFL Image URL to Stage (Bitmap) example
+[Check it out](/samples/openfl/) 
+
+The example shows how to load a picture from an URL and display it on stage as Bitmap
+
+NOTE: This example works only with OpenFL because it supports decoding of images (Jpeg, PNG and GIF) from raw bytes data.
+
+## Quick reference
+
+### Basic example
 
 ````haxe
-package ;
-import com.akifox.asynchttp.*;
+		// This is a basic GET example
+		var request = new AsyncHttpRequest("http://www.google.com",
+							   function(response:AsyncHttpResponse):Void {
+							   		if (response.isOK) {
+							   			trace(response.content);
+							   			trace('DONE (HTTP STATUS ${response.status})');
+							   		} else {
+							   			trace('ERROR (HTTP STATUS ${response.status})');
+							   		}
+							   }  
+					      );
 
-class Main {
-
-	var wikipediaHaxeFingerprint:String = null;
-
-    function new() {
-
-   		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-   		//     THERE WILL BE A BLANK WINDOW	     //
-   		// LOOK AT THE CONSOLE TO SEE THE OUTPUT //
-   		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-
-   		// The output log is going to be pretty chaotic because of multi-threading
-   		// At the beginning of every line there will be an 8 char string that identify
-   		// the request (and so the thread)
+		request.send();
+````
 
 
-		// --------------------------------------------------------------------------------------------------
+### All the available variables exposed
+
+````haxe
+
+		// NOTE:
+		// An AsyncHttpRequest is mutable until sent
+		// An AsyncHttpResponse is immutable
 
 
-   		// Force log to console (usually enabled only on -debug)
+   		// Force log to console (default enabled on -debug)
 		AsyncHttp.logEnabled = true;
 
+   		// Force not throwing errors but trace (default disabled on -debug)
+		AsyncHttp.errorSafe = true;
 
-		// --------------------------------------------------------------------------------------------------
-
-
-		// This is a basic GET example with no handler and no content
-		// not very useful, since there is no handler to get the response, but it works getting a status 200
-		// (if the connection is available, otherwise status 0)
+		// This is a basic GET example that shows all the exposed variables
+		// NOTE: In FLASH and JAVASCRIPT cross-domain policies applies
+		//		 Security errors and failed requests could happen
 		var url = "http://www.google.com";
 		var request = new AsyncHttpRequest(
-						url, 		// URL:String				"http://host:port/path?querystring"
-						"GET",		// METHOD:String			GET, POST, PUT, DELETE
-						null,		// CONTENT:Dynamic			the request content		
-						null,		// CONTENT_TYPE:String		default is "application/x-www-form-urlencoded"
-						null        // HANDLER:AsynchHttpResponse->Void (the function that will handle the response)
-					  );
+						// String	 The request url "http://host:port/path?querystring"
+						// NOTE: relative urls are accepted in FLASH and JAVSCRIPT
+						url, 
+					    // Callback	 The function that will handle the response)
+					    function(response:AsyncHttpResponse):Void {
+					   		if (response.isOK) {
+					   			// A Good response
+					   			// isOK == true if status is >= 200 and < 400
+					   			// if autoParse is enabled and parsing fails, isOK will be false
+
+					   			// An unique ID that match the request.fingerprint
+					   			var fingerprint:String = response.fingerprint;
+
+					   			// Time elapsed from request start to response end
+					   			var time:Float = response.time;
+
+					   			// The URL fetched (after all HTTP 30x redirections)
+					   			// (Usually is the same as request.url)
+					   			var url:String = response.url;
+
+					   			// The guessued filename for the URL requested
+					   			var filename:String = response.filename;
+
+					   			// HTTP response headers
+					   			// NOTE: Null in FLASH and JAVASCRIPT
+					   			var header:Map<String,String> = response.headers;
+
+					   			// HTTP response status (set to 0 if connection error)
+					   			var status:Int = response.status;
+
+					   			// The response content (String or Bytes)
+					   			// 		if autoParse == true it could be Xml, Anonymous Structure or BitmapData
+					   			// 		Based on content-type (XML, Json, Image [PNG, JPEG, GIF])
+					   			// NOTE: Always Bytes in FLASH
+					   			// NOTE: Always String in Javascript
+					   			var content:Dynamic = response.content;
+
+					   			// The response content untouched (Bytes)
+					   			//		(useful if autoParse == true)
+					   			var contentRaw:Bytes = response.contentRaw;
+
+					   			// The response content mime-type
+					   			// NOTE: Always 'application/octet-stream' in FLASH
+					   			// NOTE: Always 'text/plain' in JAVASCRIPT
+					   			var contentType:String = response.contentType;
+
+					   			// The response content length (in bytes or char)
+					   			var contentLength:Int = response.contentLength;
+
+					   			// Tells if the response.content is String or Byte
+					   			// NOTE: Always true in FLASH
+					   			// NOTE: Always false in JAVASCRIPT
+					   			var isBinary:Bool = response.isBinary;
+					   			var isText:Bool = response.isText; // == !isBinary
+
+					   			// Tells if the response.content is Xml data
+					   			// NOTE: Always false in FLASH and JAVASCRIPT
+					   			var isXml:Bool = response.isXml; // == !isBinary
+
+					   			// Tells if the response.content is Json data
+					   			// NOTE: Always false in FLASH and JAVASCRIPT
+					   			var isJson:Bool = response.isJson; // == !isBinary
+
+					   			// Parse the content as Text [String]
+					   			// Convert the data to String
+					   			// (Usually is made in automatic, but using this
+					   			//	function make sure it will be a String type)
+					   			var contentText:String = response.toText();
+
+					   			// Parse the content as Json
+					   			//		[Anonymous Structure Object] (returns null on error)
+					   			var contentJson:Dynamic = response.toJson();
+
+					   			// Parse the content as Xml
+					   			//		[Xml Object] (returns null on error)
+					   			var contentXml:Xml = response.toXml();
+
+					   			// Tells if autoParse was enabled
+					   			// NOTE: Always disabled (in development)
+					   			var autoParse:Bool = response.autoParse;
+
+					   			trace('DONE (HTTP STATUS ${response.status})');
+					   		} else {
+					   			// Any connection or status error
+					   			// (also parsing errors if request.autoParse == true)
+					   			trace('ERROR (HTTP STATUS ${response.status})');
+					   		}
+					    });
+
+		// An unique ID to identify the request
+		var fingerprint:String = request.fingerprint; 
+
+		// AsyncHttpMethod | The request http method
+		// Values are GET (default), POST, PUT or DELETE
+		// NOTE: Only GET and POST in Javascript
+		request.method = AsyncHttpMethod.GET; 
+
+		// Dynamic | The request content data
+		request.content = null;
+
+		// String  | The request content mime-type
+		request.contentType = null; // default "application/x-www-form-urlencoded"
+
+		// Bool    | The response content will be elaborated
+		//	       | XML response will be converted to an Xml Object
+		//		   | JSON response will be converted to an Anonymous Structure
+		//		   | IMAGE response will be converted to a BitmapData Object
+		request.autoParse = false; // defaul false
+
 		request.send();
 
-
-		// --------------------------------------------------------------------------------------------------
-
-
-		// This is a more complex example
-		// it is specified an host + a port + a path + a querystring
-		// but the host does not exists, so it will get a status 0
-		// (the handler is anonymous)
-		new AsyncHttpRequest("http://thishostdoesnotexists.com:8080/mypage?field=test&field2=test",
-			function(response:AsyncHttpResponse){
-				// anonymous response handler
-		 		trace(response.fingerprint + " EXAMPLE > Failed request because of host (status: " + response.status + " time: " + response.time + "s)");
-			}).send();
-
-
-		// --------------------------------------------------------------------------------------------------
-
-
-		// This is an example of multiple requests with same response handler
-		// The order of the responses could be not the same as the order of the requests
-
-		// Prepare and send (saving the fingerprint)
-		var request = new AsyncHttpRequest("http://en.wikipedia.org/wiki/Haxe",wikipediaPage);
-		wikipediaHaxeFingerprint = request.fingerprint;
-		request.send();
-
-		// Send directly
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/OpenFL",wikipediaPage).send(); 		// good
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/Akifox",wikipediaPage).send(); 		// no page (yet)
-		new AsyncHttpRequest("http://en.wiKKipedia.org/wiki/Wikipedia",wikipediaPage).send(); // wrong host
-
-   }
-
-   function wikipediaPage(response:AsyncHttpResponse) {
-   		// check the fingerprint to identify a specific request for this handler
-   		if (wikipediaHaxeFingerprint == response.fingerprint) {
-   			trace(response.fingerprint + ' EXAMPLE > HEY, this was the Haxe Wikipedia page request!');
-   		}
-
-
-		trace(response.fingerprint + " EXAMPLE > function wikipediaPage: " + response.fingerprint + " status: " + response.status + " time: " + response.time);
-		if(response.status == 0 || response.content==null) {
-			// there were no response
-			trace(response.fingerprint + ' EXAMPLE > Wikipedia: error');
-		} else {
-			trace(response.fingerprint + ' EXAMPLE > Wikipedia: done');
-		}
-   }
-}
 ````
+
+## Write to a file the response
+If you want to write in a file the response content you can use this snippet.
+
+It will handle binary file (i.e. Images, Zip...) or text file (i.e. Html, Xml, Json...)
+
+**NOTE:** *Take care of the path on different platforms!*
+
+````haxe
+request.callback = function(response:AsynchHttpResponse->Void) {
+					 var file = sys.io.File.write("/the/path/you/want/"+response.filename,response.contentIsBinary);
+		             try { 
+		                file.write(response.contentRaw); 
+		                file.flush(); 
+		             }
+		                catch(err: Dynamic){ 
+		                trace('Error writing file '+err);
+		             }
+		             file.close();
+			       };
+````
+

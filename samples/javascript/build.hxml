@@ -1,0 +1,3 @@
+-main AsyncHttpExample
+-js output/AsyncHttpExample.js
+-lib akifox-asynchttp

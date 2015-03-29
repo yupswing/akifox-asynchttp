@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	
+	<meta title="OpenFL AsyncHttp Example" package="com.sample.test" version="1.0.0" company="Akifox Studio" />
+	<app main="Main" path="bin" file="example" />
+
+	<window width="600" height="600" />
+	
+	<source path="Source" />
+
+    <haxelib name="openfl" />
+    <haxelib name="akifox-asynchttp" />
+	
+	<assets path="Assets" rename="assets" exclude="lime.svg" />
+	<icon path="Assets/lime.svg" />
+	
+</project>

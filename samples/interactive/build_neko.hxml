@@ -1,0 +1,3 @@
+-main Main
+-neko output/main.n
+-lib akifox-asynchttp

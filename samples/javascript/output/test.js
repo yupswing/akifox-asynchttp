@@ -1,0 +1,1 @@
+alert('Loaded and executed via an XmlHttpRequest');

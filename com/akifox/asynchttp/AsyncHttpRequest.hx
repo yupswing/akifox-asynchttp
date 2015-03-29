@@ -9,66 +9,159 @@ package com.akifox.asynchttp;
 
 class AsyncHttpRequest
 {
+	private var _finalized:Bool = false; //it was .sent at least once (no edit allowed)
 
-	private var _fingerprint:String;
-	public var fingerprint(get,never):String;
-	private function get_fingerprint():String {
-		return _fingerprint;
-	}
+	// ==========================================================================================
 
-	private var _url:String;
-	public var url(get,never):String;
-	private function get_url():String {
-		return _url;
-	}
-
-	private var _method:String;
-	public var method(get,never):String;
-	private function get_method():String {
-		return _method;
-	}
-
-	private var _content:String;
-	public var content(get,never):String;
-	private function get_content():String {
-		return _content;
-	}
-
-	private var _contentType:String;
-	public var contentType(get,never):String;
-	private function get_contentType():String {
-		return _contentType;
-	}
-
-	private var _responseF:AsyncHttpResponse->Void;
-	public var responseF(get,never):AsyncHttpResponse->Void;
-	private function get_responseF():AsyncHttpResponse->Void {
-		return _responseF;
-	}
-
-	private static var _methods = ["GET","POST","PUT","DELETE"];
-
-	public function new(url:String,method:String="GET",?content:String=null,?contentType:String=null,?responseF:AsyncHttpResponse->Void=null) {
-		// default content type
-		if (contentType==null) contentType = "application/x-www-form-urlencoded";
-		// validate method
-		method = method.toUpperCase();
-		if (_methods.indexOf(method)<0) method = "GET";
-
-		_fingerprint = AsyncHttp.randomUID(8);
-		_url = url;
-		_method = method;
-		_content = content;
-		_contentType = contentType;
-		_responseF = responseF;
+	public function new(?url:String="",?callback:AsyncHttpResponse->Void=null) {
+		_fingerprint = new AsyncHttp().randomUID(8);
+		this.url = url;
+		this.callback = callback;
 	}
 
 	public function toString():String {
 		return '[AsyncHttpRequest <$_fingerprint> ($_method $_url)]';
 	}
 
+	// ------------------------------------------------------------------------------------------
+
 	public function send() {
-		AsyncHttp.send(this);
+		new AsyncHttp().send(this);
+	}
+
+	public function finalize() {
+		_finalized = true; // it will not change
+	}
+
+	// ==========================================================================================
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The fingerprint is a unique 8 char key which identify this request
+	*/
+	private var _fingerprint:String;
+	public var fingerprint(get,never):String;
+	private function get_fingerprint():String {
+		return _fingerprint;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The HTTP URL
+	* complete format: http://host:port/path?querystring
+	*/
+	private var _url:String;
+	public var url(get,set):String;
+	private function get_url():String {
+		return _url;
+	}
+	private function set_url(value:String):String {
+		#if (!js && !flash)
+		if (!new AsyncHttp().REGEX_URL.match(value))
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Not a valid url "$value"');
+		#end
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		return _url = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The HTTP Method
+	* accepted values AsyncHttpMethod.GET, .POST, .PUT, .DELETE
+	*/
+	private var _method:String=AsyncHttpMethod.DEFAULT_METHOD;
+	public var method(get,set):String;
+	private function get_method():String {
+		return _method;
+	}
+	private function set_method(value:String):String {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		value = AsyncHttpMethod.validate(value);
+		return _method = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The HTTP Content
+	* Dynamic: could be a Bytes or a String, according to the Content-type
+	*/
+	private var _content:Dynamic=null;
+	public var content(get,set):Dynamic;
+	private function get_content():Dynamic {
+		return _content;
+	}
+	private function set_content(value:Dynamic):Dynamic {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		return _content = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The HTTP Content-Type
+	* String: http://www.iana.org/assignments/media-types/media-types.xhtml
+	*/
+	private static inline var DEFAULT_CONTENT_TYPE:String = "application/x-www-form-urlencoded";
+	private var _contentType:String=DEFAULT_CONTENT_TYPE;
+	public var contentType(get,set):String;
+	private function get_contentType():String {
+		return _contentType;
+	}
+	private function set_contentType(value:String):String {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		// default content type
+		if (value==null) value = DEFAULT_CONTENT_TYPE;
+		var ahttp = new AsyncHttp();
+		_contentIsBinary = ahttp.determineBinary(ahttp.determineContentKind(value));
+		return _contentType = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* Is the content binary data?
+	*/
+	private var _contentIsBinary:Bool=false;
+	public var contentIsBinary(get,set):Bool;
+	private function get_contentIsBinary():Bool {
+		return _contentIsBinary;
+	}
+	private function set_contentIsBinary(value:Bool):Bool {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		return _contentIsBinary = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The callback function to be called when the response returns
+	*/
+	private var _callback:AsyncHttpResponse->Void=null;
+	public var callback(get,set):AsyncHttpResponse->Void;
+	private function get_callback():AsyncHttpResponse->Void {
+		return _callback;
+	}
+	private function set_callback(value:AsyncHttpResponse->Void):AsyncHttpResponse->Void {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		return _callback = value;
+	}
+
+   /*
+	* ------------------------------------------------------------------------------------------
+	* The response will be parsed and the content will be an Object (Json => Anon Structure, XML => Class Xml)
+	*/
+	private var _autoParse:Bool=false;
+	public var autoParse(get,set):Bool;
+	private function get_autoParse():Bool {
+		return _autoParse;
+	}
+	private function set_autoParse(value:Bool):Bool {
+		if (_finalized)
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		return _autoParse = value;
 	}
 
 }

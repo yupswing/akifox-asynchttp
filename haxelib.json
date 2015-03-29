@@ -2,10 +2,10 @@
   "name": "akifox-asynchttp",
   "url" : "https://github.com/yupswing/akifox-asynchttp",
   "license": "MIT",
-  "tags": ["openfl","cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
+  "tags": ["cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
   "description": "Asynchronous HTTP/1.1 Requests",
-  "version": "0.2.2dev",
-  "releasenote": "Fix major bug in json parsing",
+  "version": "0.3.0",
+  "releasenote": "Made as generic haxe library + extended HTTP support + bugfixes",
   "contributors": ["yupswing"],
-  "dependencies": {"openfl" : ""}
+  "dependencies": {}
 }
