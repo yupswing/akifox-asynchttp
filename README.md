@@ -1,6 +1,7 @@
 [![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.1-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
+
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 [![Haxelib](https://img.shields.io/badge/distr-v0.3.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
