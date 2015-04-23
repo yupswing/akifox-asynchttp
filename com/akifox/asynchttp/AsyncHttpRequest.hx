@@ -9,7 +9,7 @@ package com.akifox.asynchttp;
 
 class AsyncHttpRequest
 {
-	private var _finalized:Bool = false; //it was .sent at least once (no edit allowed)
+	private var _finalised:Bool = false; //it was .sent at least once (no edit allowed)
 
 	// ==========================================================================================
 
@@ -30,12 +30,12 @@ class AsyncHttpRequest
 	}
 
 	public function finalize() {
-		_finalized = true; // it will not change
+		_finalised = true; // it will not change
 	}
 
 	// ==========================================================================================
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The fingerprint is a unique 8 char key which identify this request
 	*/
@@ -46,6 +46,23 @@ class AsyncHttpRequest
 	}
 
    /*
+	* ------------------------------------------------------------------------------------------
+	* The timeout in seconds
+	*/
+	private var _timeout:Int=10; //default 10 seconds
+	public var timeout(get,set):Int;
+	private function get_timeout():Int {
+		return _timeout;
+	}
+	private function set_timeout(value:Int):Int {
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.timeout] Can\'t modify a property when the instance is already sent');
+			return _timeout;
+		}
+		return _timeout = value;
+	}
+
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The HTTP URL
 	* complete format: http://host:port/path?querystring
@@ -60,8 +77,10 @@ class AsyncHttpRequest
 		if (!new AsyncHttp().REGEX_URL.match(value))
 			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Not a valid url "$value"');
 		#end
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
+			return _url;
+		}
 		return _url = value;
 	}
 
@@ -76,8 +95,10 @@ class AsyncHttpRequest
 		return _method;
 	}
 	private function set_method(value:String):String {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.method] Can\'t modify a property when the instance is already sent');
+			return _method;
+		}
 		value = AsyncHttpMethod.validate(value);
 		return _method = value;
 	}
@@ -93,8 +114,10 @@ class AsyncHttpRequest
 		return _content;
 	}
 	private function set_content(value:Dynamic):Dynamic {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.content] Can\'t modify a property when the instance is already sent');
+			return _content;
+		}
 		return _content = value;
 	}
 
@@ -110,8 +133,10 @@ class AsyncHttpRequest
 		return _contentType;
 	}
 	private function set_contentType(value:String):String {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.contentType] Can\'t modify a property when the instance is already sent');
+			return _contentType;
+		}
 		// default content type
 		if (value==null) value = DEFAULT_CONTENT_TYPE;
 		var ahttp = new AsyncHttp();
@@ -129,8 +154,10 @@ class AsyncHttpRequest
 		return _contentIsBinary;
 	}
 	private function set_contentIsBinary(value:Bool):Bool {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.contentIsBinary] Can\'t modify a property when the instance is already sent');
+			return _contentIsBinary;
+		}
 		return _contentIsBinary = value;
 	}
 
@@ -144,8 +171,10 @@ class AsyncHttpRequest
 		return _callback;
 	}
 	private function set_callback(value:AsyncHttpResponse->Void):AsyncHttpResponse->Void {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.callback] Can\'t modify a property when the instance is already sent');
+			return _callback;
+		}
 		return _callback = value;
 	}
 
@@ -159,8 +188,10 @@ class AsyncHttpRequest
 		return _autoParse;
 	}
 	private function set_autoParse(value:Bool):Bool {
-		if (_finalized)
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Can\'t modify a property when the instance is already sent');
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.autoParse] Can\'t modify a property when the instance is already sent');
+			return _autoParse;
+		}
 		return _autoParse = value;
 	}
 

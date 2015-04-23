@@ -6,7 +6,7 @@ package com.akifox.asynchttp;
 
 @licence MIT Licence
 
-@version 0.3.0
+@version 0.3.1
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
 #### Asyncronous HTTP Request HAXE Library
@@ -44,7 +44,7 @@ typedef AsyncHttpHeaders = Map<String,String>;
 
 #if (neko || cpp || java)
 
-	#if neko 
+	#if neko
 		typedef Thread = neko.vm.Thread;
 		typedef Lib = neko.Lib;
 	#elseif java
@@ -111,7 +111,7 @@ class AsyncHttp
 	public static var errorSafe:Bool = #if debug false #else true #end;
 
 	public static inline function log(message:String) {
-		if (AsyncHttp.logEnabled) trace(message); 
+		if (AsyncHttp.logEnabled) trace(message);
 	}
 
 	public static inline function error(message:String) {
@@ -193,6 +193,8 @@ class AsyncHttp
 				var worker = Thread.create(useSocket);
 				worker.sendMessage(request);
 
+				//useSocket(request); //REQUEST WITHOUT THREAD (TESTING PURPOSES)
+
 			} else {
 
 			  	error('${request.fingerprint} ERROR: Only HTTP Protocol supported -> ${request.url}');
@@ -227,6 +229,7 @@ class AsyncHttp
 	private function useSocketRequest(url:String,request:AsyncHttpRequest):Requester {
 
 		var s = new Socket();
+		s.setTimeout(request.timeout);
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
@@ -252,7 +255,7 @@ class AsyncHttp
 			#end
 			connected = true;
 		} catch (msg:Dynamic) {
-		  	log('${request.fingerprint} ERROR: Request failed -> $msg');
+		  	error('${request.fingerprint} ERROR: Request failed -> $msg');
 		}
 
 
@@ -282,9 +285,20 @@ class AsyncHttp
 
 			// -- START RESPONSE
 
+			var ln:String = '';
 			while (true)
 			{
-				var ln = s.input.readLine().trim();
+				try {
+					ln = s.input.readLine().trim();
+				} catch(msg:Dynamic) {
+					// error (probably unexpected connection terminated)
+					error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+					ln = '';
+					status = 0;
+					s.close();
+					s = null;
+					headers = new AsyncHttpHeaders();
+				}
 				if (ln == '') break; //end of response headers
 
 				if (status==0) {
@@ -294,11 +308,11 @@ class AsyncHttp
 				} else {
 					var a = ln.split(':');
 					var key = a.shift().toLowerCase();
-					headers[key] = a.join(':').trim();   
+					headers[key] = a.join(':').trim();
 				}
-		  	}
+		  }
 
-		  	// -- END RESPONSE HEADERS
+		  // -- END RESPONSE HEADERS
 		}
 
 		return {status:status,socket:s,headers:headers};
@@ -327,7 +341,7 @@ class AsyncHttp
 		var s:sys.net.Socket;
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
-		
+
 
 		do {
 			var req:Requester = useSocketRequest(url,request);
@@ -351,7 +365,7 @@ class AsyncHttp
 							s.close();
 							s = null;
 			  			} else {
-			  				// redirect to same url 
+			  				// redirect to same url
 			  				redirect = false;
 			  			}
 			  		}
@@ -383,29 +397,42 @@ class AsyncHttp
 
 					// UNKNOWN CONTENT LENGTH
 
-					contentBytes = s.input.readAll();
+					try {
+						contentBytes = s.input.readAll();
+					} catch(msg:Dynamic) {
+						error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+						status = 0;
+						contentBytes = Bytes.alloc(0);
+					}
 					contentLength = contentBytes.length;
-				    log('${request.fingerprint} LOADED: $contentLength/$contentLength bytes (100%)');
+				  log('${request.fingerprint} LOADED: $contentLength/$contentLength bytes (100%)');
 
 				case AsyncHttpTransferMode.FIXED:
 
 					// KNOWN CONTENT LENGTH
 
-				    contentBytes = Bytes.alloc(contentLength);    
-				    var block_len = 1024 * 1024;   // BLOCK SIZE: small value (like 64 KB) causes slow download
-				    var nblocks = Math.ceil(contentLength / block_len);
-				    var bytes_left = contentLength;
-				    bytes_loaded = 0;
-				    
-				    for (i in 0...nblocks)
-				    {
-				      var actual_block_len = (bytes_left > block_len) ? block_len : bytes_left;
+			    contentBytes = Bytes.alloc(contentLength);
+			    var block_len = 1024 * 1024;   // BLOCK SIZE: small value (like 64 KB) causes slow download
+			    var nblocks = Math.ceil(contentLength / block_len);
+			    var bytes_left = contentLength;
+			    bytes_loaded = 0;
+
+			    for (i in 0...nblocks)
+			    {
+			      var actual_block_len = (bytes_left > block_len) ? block_len : bytes_left;
+						try {
 				      s.input.readFullBytes(contentBytes, bytes_loaded, actual_block_len);
-				      bytes_left -= actual_block_len;
-				      
-				      bytes_loaded += actual_block_len;      
-				      log('${request.fingerprint} LOADED: $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)');      
-				    }
+						} catch(msg:Dynamic) {
+							error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+							status = 0;
+							contentBytes = Bytes.alloc(0);
+							break;
+						}
+			      bytes_left -= actual_block_len;
+
+			      bytes_loaded += actual_block_len;
+			      log('${request.fingerprint} LOADED: $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)');
+			    }
 
 				case AsyncHttpTransferMode.CHUNKED:
 
@@ -414,15 +441,21 @@ class AsyncHttp
 					var bytes:Bytes;
 					var buffer = new haxe.io.BytesBuffer();
 					var chunk:Int;
-					while(true) {
-						var v:String = s.input.readLine();
-						chunk = Std.parseInt('0x$v');
-						if (chunk==0) break;
-						bytes = s.input.read(chunk);
-						bytes_loaded += chunk;
-						buffer.add(bytes);
-						s.input.read(2); // \n\r between chunks = 2 bytes
-				        log('${request.fingerprint} LOADED: $bytes_loaded bytes (Total unknown)');  
+					try {
+						while(true) {
+							var v:String = s.input.readLine();
+							chunk = Std.parseInt('0x$v');
+							if (chunk==0) break;
+							bytes = s.input.read(chunk);
+							bytes_loaded += chunk;
+							buffer.add(bytes);
+							s.input.read(2); // \n\r between chunks = 2 bytes
+							log('${request.fingerprint} LOADED: $bytes_loaded bytes (Total unknown)');
+						}
+					} catch(msg:Dynamic) {
+						error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+						status = 0;
+						buffer = new haxe.io.BytesBuffer();
 					}
 
 					contentBytes = buffer.getBytes();
@@ -445,8 +478,10 @@ class AsyncHttp
 
 		}
 
-		s.close();
-		s = null;
+		if (s!=null) {
+			s.close();
+			s = null;
+		}
 
 		var time:Float = elapsedTime(start);
 
@@ -528,7 +563,7 @@ class AsyncHttp
 		urlLoader.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = e.errorID;
-		    log('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
+		    error('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
 		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
 		    urlLoader = null;
@@ -537,7 +572,7 @@ class AsyncHttp
 		urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = 0;
-		    log('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
+		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
 		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
 		    urlLoader = null;
@@ -558,11 +593,11 @@ class AsyncHttp
 		  	urlLoader.load(urlRequest);
 		} catch (msg:Dynamic) {
 		    var time = elapsedTime(start);
-		    log('${request.fingerprint} ERROR: Request failed -> $msg');
+		    error('${request.fingerprint} ERROR: Request failed -> $msg');
 		    if (request.callback!=null)
 		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
 		    urlLoader = null;
-		} 
+		}
 	}
 
   	#elseif js
@@ -592,7 +627,7 @@ class AsyncHttp
 			var httpstatusDone = false;
 
 			r.onError = function(msg:String) {
-		    	log('${request.fingerprint} ERROR: Request failed -> $msg');
+		    	error('${request.fingerprint} ERROR: Request failed -> $msg');
 		    	var time = elapsedTime(start);
 		    	if (request.callback!=null)
 		    		request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
@@ -625,7 +660,7 @@ class AsyncHttp
 	// UID Generator
 	//
 	//##########################################################################################
-	
+
 	private static var UID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 	public function randomUID(?size:Int=32):String

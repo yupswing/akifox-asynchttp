@@ -1,11 +1,11 @@
-{     
+{
   "name": "akifox-asynchttp",
   "url" : "https://github.com/yupswing/akifox-asynchttp",
   "license": "MIT",
   "tags": ["cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
   "description": "Haxe multi-platform Asynchronous HTTP Requests",
-  "version": "0.3.0",
-  "releasenote": "Made as generic haxe library + extended HTTP support + bugfixes",
+  "version": "0.3.1",
+  "releasenote": "Handling connection errors and timeouts",
   "contributors": ["yupswing"],
   "dependencies": {}
 }

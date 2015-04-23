@@ -1,8 +1,8 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.0-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.1-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.2.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.3.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
@@ -72,6 +72,8 @@ import com.akifox.asynchttp.*;
   - [ ] Test socket solution on Flash target
   - [ ] Avoid redirect looping between urls (keep a list and check if one is recurring)
 
+---
+
 ## What's new (0.2 to 0.3) [breaking API]
 
 - The library doesn't rely on OpenFL anymore and it is a pure Haxe library!
@@ -81,6 +83,13 @@ import com.akifox.asynchttp.*;
 - The library is now thread-safe (major problems in 0.2)
 - Support for redirection (HTTP STATUS 30x)
 - Using sockets make requests around 50% faster than OpenFL URLLoader
+
+## What's new 0.3.1 (fixed issue #1)
+
+- Timeout option (request)
+- Handling unexpected connection termination
+
+---
 
 ## Important notes
 
@@ -105,12 +114,12 @@ The example shows how to handle multiple requests and responses
 The example allow the user to try any URL to see the behaviour of the library with redirects, errors and his own urls.
 
 ### Javascript example
-[Check it out](/samples/javascript/) 
+[Check it out](/samples/javascript/)
 
 A simple example in javascript that shows
 
 ### OpenFL Image URL to Stage (Bitmap) example
-[Check it out](/samples/openfl/) 
+[Check it out](/samples/openfl/)
 
 The example shows how to load a picture from an URL and display it on stage as Bitmap
 
@@ -159,7 +168,7 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 		var request = new AsyncHttpRequest(
 						// String	 The request url "http://host:port/path?querystring"
 						// NOTE: relative urls are accepted in FLASH and JAVSCRIPT
-						url, 
+						url,
 					    // Callback	 The function that will handle the response)
 					    function(response:AsyncHttpResponse):Void {
 					   		if (response.isOK) {
@@ -247,12 +256,15 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 					    });
 
 		// An unique ID to identify the request
-		var fingerprint:String = request.fingerprint; 
+		var fingerprint:String = request.fingerprint;
 
 		// AsyncHttpMethod | The request http method
 		// Values are GET (default), POST, PUT or DELETE
 		// NOTE: Only GET and POST in Javascript
-		request.method = AsyncHttpMethod.GET; 
+		request.method = AsyncHttpMethod.GET;
+
+		// Int     | Request timeout in seconds (default 10 seconds)
+		request.timeout = 10;
 
 		// Dynamic | The request content data
 		request.content = null;
@@ -280,14 +292,13 @@ It will handle binary file (i.e. Images, Zip...) or text file (i.e. Html, Xml, J
 ````haxe
 request.callback = function(response:AsynchHttpResponse):Void {
 					 var file = sys.io.File.write("/the/path/you/want/"+response.filename,response.contentIsBinary);
-		             try { 
-		                file.write(response.contentRaw); 
-		                file.flush(); 
+		             try {
+		                file.write(response.contentRaw);
+		                file.flush();
 		             }
-		                catch(err: Dynamic){ 
+		                catch(err: Dynamic){
 		                trace('Error writing file '+err);
 		             }
 		             file.close();
 			       };
 ````
-
