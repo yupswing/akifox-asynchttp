@@ -183,6 +183,11 @@ class AsyncHttpResponse {
 		return _url;
 	}
 
+	public var urlString(get,never):String;
+	private function get_urlString():String {
+		return _url.toString();
+	}
+
 	private var _headers:AsyncHttpHeaders;
 	public var headers(get,never):AsyncHttpHeaders;
 	private function get_headers():AsyncHttpHeaders {

@@ -8,7 +8,7 @@
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
 
-The akifox-asynchttp class aims to provide an easy tool to manage HTTP Request in an pure Asynchronous way using multi-threading on available targets (Neko, CPP, Java), the flash.net.URLLoader on Flash target and haxe.Http on Javascript target.
+The akifox-asynchttp library provides an easy-to-use tool to manage HTTP and HTTPS Requests in an pure Asynchronous way using multi-threading on available targets (Neko, CPP, Java), the flash.net.URLLoader on Flash target and haxe.Http on Javascript target.
 
 ### Inspiration
 
@@ -34,6 +34,8 @@ import com.akifox.asynchttp.*;
 compile with
 ```-lib akifox-asynchttp```
 
+and add the hxssl library (only needed on NEKO/CPP) to have SSL support
+```-lib hxssl```
 
 ### Use it in OpenFL Projects
 After installing the library via Haxelib, add the library reference in your ```project.xml```
@@ -58,8 +60,8 @@ import com.akifox.asynchttp.*;
     - [x] Support standard methods (GET, POST)
     - [x] Support restful methods (PUT, DELETE)
   - Transfer modes
-    - [x] Support unknown transfer mode (HTTP/1.x)
-    - [x] Support fixed content-length transfer mode (HTTP/1.x)
+    - [x] Support unknown transfer mode (HTTP/1.0+)
+    - [x] Support fixed content-length transfer mode (HTTP/1.0+)
     - [x] Support chunked transfer mode (HTTP/1.1)
   - Redirects
     - [x] Support redirect (Status 301,302,303,307)
@@ -212,7 +214,7 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 
 					   			// The URL fetched (after all HTTP 30x redirections)
 					   			// (Usually is the same as request.url)
-					   			var url:String = response.url;
+					   			var url:String = response.urlString;
 
 					   			// The guessued filename for the URL requested
 					   			var filename:String = response.filename;
