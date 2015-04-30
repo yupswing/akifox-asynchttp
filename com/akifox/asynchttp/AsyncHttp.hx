@@ -55,20 +55,43 @@ typedef AsyncHttpHeaders = Map<String,String>;
 		typedef Lib = cpp.Lib;
 	#end
 
-	#if hxssl
-	// SSL Library
-	typedef SocketSSL = sys.ssl.Socket;
+
+	typedef AbstractSocket = {
+		var input(default,null) : haxe.io.Input;
+		var output(default,null) : haxe.io.Output;
+		function connect( host : Host, port : Int ) : Void;
+		function setTimeout( t : Float ) : Void;
+		function write( str : String ) : Void;
+		function close() : Void;
+		function shutdown( read : Bool, write : Bool ) : Void;
+	}
+
+	// TCP Socket
+	typedef SocketTCP = sys.net.Socket;
+
+	// TCP+SSL Socket
+	#if php
+	typedef SocketSSL = php.net.SslSocket;
+	#elseif java
+	typedef SocketSSL = java.net.SslSocket;
+	#elseif hxssl
+		// #if neko
+		// typedef SocketSSL = neko.tls.Socket;
+		// #else
+		typedef SocketSSL = sys.ssl.Socket;
+		// #end
 	#else
-	typedef SocketSSL = sys.net.Socket;
+	typedef SocketSSL = sys.net.Socket; // NO SSL
 	#end
 
-	typedef Socket = sys.net.Socket;
+	// Host
 	typedef Host = sys.net.Host;
 
 	typedef Requester = {
 		var status:Int;
 		var headers:AsyncHttpHeaders;
-		var socket:Socket;
+		var socket:AbstractSocket;
+		var ssl:Bool;
 	}
 
 #end
@@ -194,12 +217,12 @@ class AsyncHttp
 		#if (neko || cpp || java)
 
 			// Multithread version (only Neko, CPP and JAVA) HTTP protocol
-			// if (request.async) {
-			// 	var worker = Thread.create(socketThread);
-			// 	worker.sendMessage(request);
-			// } else {
+			if (request.async) {
+				var worker = Thread.create(socketThread);
+				worker.sendMessage(request);
+			} else {
 				useSocket(request);
-			//}
+			}
 
 		#elseif flash
 
@@ -236,20 +259,24 @@ class AsyncHttp
 		var ssl:Bool = (rx.matched(1)=="https");
 		var host = rx.matched(2);
 		var port = rx.matched(3);
-		if (port=="") port = "80";
+		if (port=="") {
+			if (ssl) port = "443"; // default HTTPS port
+			else port = "80"; // default HTTP port
+		}
 		else port = port.substr(1); //removes ":"
 		var path = rx.matched(4);
 		if (path=="") path = "/";
 		var querystring = rx.matched(5);
 
-		var s:Socket;
-		if (!ssl) {
-			s = cast(new Socket(),Socket);
-		} else {
-			s = cast(new SocketSSL(),SocketSSL);
-			#if !hxssl
-			error('${request.fingerprint} ERROR: requested HTTPS url but hxssl library not installed (fallback on HTTP socket)');
+		var s:AbstractSocket;
+		if (ssl) {
+			s = new SocketSSL();
+			#if (!php && !java && !hxssl)
+			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n
+																		On Neko/CPP the library support hxssl (you have to install and reference it with `-lib hxssl`');
 			#end
+		} else {
+			s = new SocketTCP();
 		}
 		s.setTimeout(request.timeout);
 
@@ -265,36 +292,45 @@ class AsyncHttp
 			#end
 			connected = true;
 		} catch (msg:Dynamic) {
-		  	error('${request.fingerprint} ERROR: Request failed -> $msg');
+		  error('${request.fingerprint} ERROR: Request failed -> $msg');
 		}
 
 
 		if (connected) {
 
-			s.output.writeString('${request.method} $path$querystring HTTP/1.1\r\n');
-			log('${request.fingerprint} HTTP > ${request.method} $path$querystring HTTP/1.1');
-			s.output.writeString('User-Agent: '+USER_AGENT+'\r\n');
-			log('${request.fingerprint} HTTP > User-Agent: akifox-asynchttp');
-			s.output.writeString('Host: $host\r\n');
-			log('${request.fingerprint} HTTP > Host: $host');
-			if (request.content!=null) {
-				s.output.writeString('Content-Type: ${request.contentType}\r\n');
-				log('${request.fingerprint} HTTP > Content-Type: ${request.contentType}');
-				s.output.writeString('Content-Length: '+request.content.length+'\r\n');
-				log('${request.fingerprint} HTTP > Content-Length: '+request.content.length);
-				s.output.writeString('\r\n');
-				if (request.contentIsBinary) {
-					s.output.writeBytes(cast(request.content,Bytes),0,request.content.length);
-				} else {
-					s.output.writeString(request.content.toString());
+			try {
+				s.output.writeString('${request.method} $path$querystring HTTP/1.1\r\n');
+				log('${request.fingerprint} HTTP > ${request.method} $path$querystring HTTP/1.1');
+				s.output.writeString('User-Agent: '+USER_AGENT+'\r\n');
+				log('${request.fingerprint} HTTP > User-Agent: akifox-asynchttp');
+				s.output.writeString('Host: $host\r\n');
+				log('${request.fingerprint} HTTP > Host: $host');
+				if (request.content!=null) {
+					s.output.writeString('Content-Type: ${request.contentType}\r\n');
+					log('${request.fingerprint} HTTP > Content-Type: ${request.contentType}');
+					s.output.writeString('Content-Length: '+request.content.length+'\r\n');
+					log('${request.fingerprint} HTTP > Content-Length: '+request.content.length);
+					s.output.writeString('\r\n');
+					if (request.contentIsBinary) {
+						s.output.writeBytes(cast(request.content,Bytes),0,request.content.length);
+					} else {
+						s.output.writeString(request.content.toString());
+					}
 				}
+				s.output.writeString('\r\n');
+			} catch (msg:Dynamic) {
+				error('${request.fingerprint} ERROR: Request failed -> $msg');
+				status = 0;
+				s.close();
+				s = null;
+				headers = new AsyncHttpHeaders();
+				connected = false;
 			}
-			s.output.writeString('\r\n');
 
-			// -- END REQUEST
+		} // -- END REQUEST
 
-			// -- START RESPONSE
-
+		// -- START RESPONSE
+		if (connected) {
 			var ln:String = '';
 			while (true)
 			{
@@ -308,6 +344,7 @@ class AsyncHttp
 					s.close();
 					s = null;
 					headers = new AsyncHttpHeaders();
+					connected = false;
 				}
 				if (ln == '') break; //end of response headers
 
@@ -321,11 +358,10 @@ class AsyncHttp
 					headers[key] = a.join(':').trim();
 				}
 		  }
-
 		  // -- END RESPONSE HEADERS
 		}
 
-		return {status:status,socket:s,headers:headers};
+		return {status:status,socket:s,ssl:ssl,headers:headers};
 	}
 
 	private function socketThread() {
@@ -353,7 +389,8 @@ class AsyncHttp
 		var connected:Bool = false;
 		var redirect:Bool = false;
 
-		var s:Socket;
+		var s:AbstractSocket;
+		var ssl:Bool = false;
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
@@ -361,6 +398,7 @@ class AsyncHttp
 		do {
 			var req:Requester = useSocketRequest(url,request);
 			status = req.status;
+			ssl = req.ssl;
 			s = req.socket;
 			headers = req.headers;
 			req = null;
@@ -494,7 +532,7 @@ class AsyncHttp
 		}
 
 		if (s!=null) {
-			s.close();
+			if (connected) s.close();
 			s = null;
 		}
 

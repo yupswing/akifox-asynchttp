@@ -39,18 +39,17 @@ class Main {
 		// An AsyncHttpResponse is immutable
 
 		// This is a basic GET example that shows all the exposed variables
-		var request = new AsyncHttpRequest("http://www.apple.com",
-								function(response:AsyncHttpResponse) {
-									if (response.isOK) {
-										trace('DONE (HTTP STATUS ${response.status})');
-									} else {
-										trace('ERROR (HTTP STATUS ${response.status})');
+		var request = new AsyncHttpRequest({
+					   url : "http://www.apple.com",
+				callback : function(response:AsyncHttpResponse) {
+										if (response.isOK) {
+											trace('DONE (HTTP STATUS ${response.status})');
+										} else {
+											trace('ERROR (HTTP STATUS ${response.status})');
+										}
 									}
-								}  
-					      );
-		request.autoParse = false; // set autoParse to false (it is already the default)
+			});
 		request.send();
-		request.autoParse = false; // can't modify a property after sending! (it will throw an error)
 
 
 		// --------------------------------------------------------------------------------------------------
@@ -60,11 +59,13 @@ class Main {
 		// it is specified an host + a port + a path + a querystring
 		// but the host does not exists, so it will get a status 0
 		// (the handler is anonymous)
-		new AsyncHttpRequest("http://thishostdoesnotexists.com:8080/mypage?field=test&field2=test",
-							 function(response:AsyncHttpResponse){
-								// anonymous response handler
-						 		trace(response.fingerprint + " EXAMPLE > Failed request because of host (status: " + response.status + " time: " + response.time + "s)");
-							 }).send();
+		new AsyncHttpRequest({
+					 url : "http://thishostdoesnotexists.com:8080/mypage?field=test&field2=test",
+			callback : function(response:AsyncHttpResponse){
+									// anonymous response handler
+									trace(response.fingerprint + " EXAMPLE > Failed request because of host (status: " + response.status + " time: " + response.time + "s)");
+								 }
+			}).send();
 
 
 		// --------------------------------------------------------------------------------------------------
@@ -74,14 +75,14 @@ class Main {
 		// The order of the responses could be not the same as the order of the requests
 
 		// Prepare and send (saving the fingerprint)
-		var request = new AsyncHttpRequest("http://en.wikipedia.org/wiki/Haxe",wikipediaPage);
+		var request = new AsyncHttpRequest({url:"http://en.wikipedia.org/wiki/Haxe",callback:wikipediaPage});
 		wikipediaHaxeFingerprint = request.fingerprint;
 		request.send();
 
 		// Send directly
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/OpenFL",wikipediaPage).send(); 		// good
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/Akifox",wikipediaPage).send(); 		// no page (yet)
-		new AsyncHttpRequest("http://en.wiKKipedia.org/wiki/Wikipedia",wikipediaPage).send(); // wrong host
+		new AsyncHttpRequest({url:"http://en.wikipedia.org/wiki/OpenFL",callback:wikipediaPage}).send(); 		// good
+		new AsyncHttpRequest({url:"http://en.wikipedia.org/wiki/Akifox",callback:wikipediaPage}).send(); 		// no page (yet)
+		new AsyncHttpRequest({url:"http://en.wiKKipedia.org/wiki/Wikipedia",callback:wikipediaPage}).send(); // wrong host
 
 	}
 

@@ -1,0 +1,3 @@
+-main Main
+-java output/java
+-lib akifox-asynchttp

@@ -62,26 +62,43 @@ import com.akifox.asynchttp.*;
     - [x] Support fixed content-length transfer mode (HTTP/1.x)
     - [x] Support chunked transfer mode (HTTP/1.1)
   - [x] Support redirect (Status 301,302,303,307)
+- Features
+  - [x] HTTPS seamless support (with SSL Socket) **[introduced in 4.0]**
+  - [x] Synchronous requests **[introduced in 4.0]**
 - Parsing
-  - [ ] **[4.0]** Parsing based on content-type (autoParse option, default false) [disabled]
   - [x] Json to Anonymous Structure
   - [x] XML to Xml object
   - [x] Image (Png,Jpeg, Gif) to BitmapData object (only with OpenFL support)
 - Todo
   - [ ] Manage multiple requests in a single thread (to compact)
-  - [ ] **[4.0]** HTTPS support (with SSL Socket)
-  - [ ] **[4.0]** Test socket solution on Flash target
-  - [ ] **[4.0]** Avoid redirect looping between urls (keep a list and check if one is recurring)
+  - [ ] Test socket solution on Flash target **[4.0]**
+  - [ ] Avoid redirect looping between urls (keep a list and check if one is recurring) **[4.0]**
 
 ---
 
 ## What's new 0.4.0 [breaking API]
 
+- SSL support (cpp+neko using [hxssl](https://github.com/tong/hxssl), java using standard haxe)
 - Removed autoparse option
+- Synchronous options on every request
+- Request cloning
 - Easier instances (options instead of arguments for *new*)
-- SSL support (cpp+neko) using [hxssl](https://github.com/tong/hxssl)
 - Custom headers on Request
 - Better redirect handling
+
+The API change is minimal but breaking:
+Instead of making a Request object with 2 parameters
+````haxe
+// version <= 3.x
+new AsyncHttpRequest('urlstring',callbackFunction);
+````
+you can pass every setting as options
+````haxe
+// version >= 4.x
+new AsyncHttpRequest({url:'urlstring',callback:callbackFunction});
+````
+
+Fix your code! This edit was necessary to make future improvements easier with no breaking api.
 
 ## What's new 0.3.1 (fixed issue #1)
 
