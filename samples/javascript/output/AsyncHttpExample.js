@@ -340,6 +340,7 @@ com.akifox.asynchttp.AsyncHttp.prototype = {
 		var url = request.get_url();
 		var status = 0;
 		var headers = new com.akifox.asynchttp.HttpHeaders();
+		headers.finalise();
 		var content = null;
 		var contentType = "text/plain";
 		var contentIsBinary = this.determineBinary(this.determineContentKind(contentType));
@@ -395,7 +396,7 @@ com.akifox.asynchttp.AsyncHttpRequest = function(options) {
 	this._http11 = true;
 	this._async = true;
 	this._timeout = 10;
-	this._headers = null;
+	this._headers = new com.akifox.asynchttp.HttpHeaders();
 	this._finalised = false;
 	this._fingerprint = new com.akifox.asynchttp.AsyncHttp().randomUID(8);
 	if(options != null) {
@@ -403,7 +404,7 @@ com.akifox.asynchttp.AsyncHttpRequest = function(options) {
 		if(options.http11 != null) this.set_http11(options.http11);
 		if(options.url != null) this.set_url(options.url);
 		if(options.callback != null) this.set_callback(options.callback);
-		if(options.headers != null) this._headers = options.headers;
+		if(options.headers != null) this._headers = options.headers.clone();
 		if(options.timeout != null) this.set_timeout(options.timeout);
 		if(options.method != null) this.set_method(options.method);
 		if(options.content != null) this.set_content(options.content);
@@ -423,6 +424,7 @@ com.akifox.asynchttp.AsyncHttpRequest.prototype = {
 		new com.akifox.asynchttp.AsyncHttp().send(this);
 	}
 	,finalise: function() {
+		this._headers.finalise();
 		this._finalised = true;
 	}
 	,get_fingerprint: function() {
@@ -479,7 +481,7 @@ com.akifox.asynchttp.AsyncHttpRequest.prototype = {
 		case "String":
 			v = new com.akifox.asynchttp.URL(value);
 			break;
-		case "URL":
+		case "com.akifox.asynchttp.URL":case "URL":
 			v = value.clone();
 			break;
 		default:
@@ -658,31 +660,47 @@ com.akifox.asynchttp.AsyncHttpResponse.prototype = {
 	,__properties__: {get_isOK:"get_isOK",get_filename:"get_filename",get_time:"get_time",get_contentLength:"get_contentLength",get_contentIsBinary:"get_contentIsBinary",get_contentType:"get_contentType",get_contentRaw:"get_contentRaw",get_content:"get_content",get_status:"get_status",get_headers:"get_headers",get_urlString:"get_urlString",get_url:"get_url",get_fingerprint:"get_fingerprint",get_request:"get_request",get_isImage:"get_isImage",get_isJson:"get_isJson",get_isXml:"get_isXml",get_isText:"get_isText",get_isBinary:"get_isBinary"}
 };
 com.akifox.asynchttp.HttpHeaders = function(headers) {
+	this._finalised = false;
 	this._headers = new haxe.ds.StringMap();
 	if(headers == null) return;
-	var _g = 0;
-	var _g1 = Reflect.fields(headers);
-	while(_g < _g1.length) {
-		var key = _g1[_g];
-		++_g;
-		var value = Reflect.getProperty(headers,key);
-		this.add(key,value);
+	console.log(Type.getClassName(Type.getClass(headers)));
+	var _g = Type.getClassName(Type.getClass(headers));
+	switch(_g) {
+	case "com.akifox.asynchttp.HttpHeaders":case "HttpHeaders":
+		var $it0 = (js.Boot.__cast(headers , com.akifox.asynchttp.HttpHeaders)).keys();
+		while( $it0.hasNext() ) {
+			var key = $it0.next();
+			this.add(key,(js.Boot.__cast(headers , com.akifox.asynchttp.HttpHeaders)).get(key));
+		}
+		break;
+	default:
+		var _g1 = 0;
+		var _g2 = Reflect.fields(headers);
+		while(_g1 < _g2.length) {
+			var key1 = _g2[_g1];
+			++_g1;
+			var value = Reflect.getProperty(headers,key1);
+			this.add(key1,value);
+		}
 	}
 };
 com.akifox.asynchttp.HttpHeaders.__name__ = ["com","akifox","asynchttp","HttpHeaders"];
-com.akifox.asynchttp.HttpHeaders.validate = function(header) {
+com.akifox.asynchttp.HttpHeaders.validateRequest = function(header) {
 	if(header == null) return false;
 	if((function($this) {
 		var $r;
 		var x = header.toLowerCase();
-		$r = HxOverrides.indexOf(com.akifox.asynchttp.HttpHeaders.FOBIDDEN_HEADERS,x,0);
+		$r = HxOverrides.indexOf(com.akifox.asynchttp.HttpHeaders.FORBIDDEN_ON_REQUEST,x,0);
 		return $r;
 	}(this)) >= 0) return false;
 	return true;
 };
 com.akifox.asynchttp.HttpHeaders.prototype = {
-	toMap: function() {
-		return this._headers;
+	finalise: function() {
+		this._finalised = true;
+	}
+	,clone: function() {
+		return new com.akifox.asynchttp.HttpHeaders(this);
 	}
 	,keys: function() {
 		return this._headers.keys();
@@ -695,8 +713,9 @@ com.akifox.asynchttp.HttpHeaders.prototype = {
 		return "";
 	}
 	,add: function(key,value) {
-		if(!com.akifox.asynchttp.HttpHeaders.validate(key)) {
-			if(com.akifox.asynchttp.AsyncHttp.logEnabled) console.log("HttpHeaders WARNING: The header `" + key + "` will be ignored on requests because it is managed by the library");
+		if(this._finalised) {
+			if(com.akifox.asynchttp.AsyncHttp.errorSafe) console.log("HttpHeaders ERROR: [.add()] Can't add an header. This HttpHeaders object is immutable"); else throw "HttpHeaders ERROR: [.add()] Can't add an header. This HttpHeaders object is immutable";
+			return this;
 		}
 		this._headers.set(key,value);
 		value;
@@ -704,6 +723,10 @@ com.akifox.asynchttp.HttpHeaders.prototype = {
 	}
 	,remove: function(key) {
 		if(key == null) return this;
+		if(this._finalised) {
+			if(com.akifox.asynchttp.AsyncHttp.errorSafe) console.log("HttpHeaders ERROR: [.remove()] Can't remove an header. This HttpHeaders object is immutable"); else throw "HttpHeaders ERROR: [.remove()] Can't remove an header. This HttpHeaders object is immutable";
+			return this;
+		}
 		this._headers.remove(key);
 		return this;
 	}
@@ -1236,6 +1259,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 var js = {};
 js.Boot = function() { };
 js.Boot.__name__ = ["js","Boot"];
+js.Boot.getClass = function(o) {
+	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+};
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
@@ -1303,6 +1329,51 @@ js.Boot.__string_rec = function(o,s) {
 		return String(o);
 	}
 };
+js.Boot.__interfLoop = function(cc,cl) {
+	if(cc == null) return false;
+	if(cc == cl) return true;
+	var intf = cc.__interfaces__;
+	if(intf != null) {
+		var _g1 = 0;
+		var _g = intf.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var i1 = intf[i];
+			if(i1 == cl || js.Boot.__interfLoop(i1,cl)) return true;
+		}
+	}
+	return js.Boot.__interfLoop(cc.__super__,cl);
+};
+js.Boot.__instanceof = function(o,cl) {
+	if(cl == null) return false;
+	switch(cl) {
+	case Int:
+		return (o|0) === o;
+	case Float:
+		return typeof(o) == "number";
+	case Bool:
+		return typeof(o) == "boolean";
+	case String:
+		return typeof(o) == "string";
+	case Array:
+		return (o instanceof Array) && o.__enum__ == null;
+	case Dynamic:
+		return true;
+	default:
+		if(o != null) {
+			if(typeof(cl) == "function") {
+				if(o instanceof cl) return true;
+				if(js.Boot.__interfLoop(js.Boot.getClass(o),cl)) return true;
+			}
+		} else return false;
+		if(cl == Class && o.__name__ != null) return true;
+		if(cl == Enum && o.__ename__ != null) return true;
+		return o.__enum__ == cl;
+	}
+};
+js.Boot.__cast = function(o,t) {
+	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
+};
 js.Browser = function() { };
 js.Browser.__name__ = ["js","Browser"];
 js.Browser.createXMLHttpRequest = function() {
@@ -1335,6 +1406,14 @@ String.__name__ = ["String"];
 Array.__name__ = ["Array"];
 Date.prototype.__class__ = Date;
 Date.__name__ = ["Date"];
+var Int = { __name__ : ["Int"]};
+var Dynamic = { __name__ : ["Dynamic"]};
+var Float = Number;
+Float.__name__ = ["Float"];
+var Bool = Boolean;
+Bool.__ename__ = ["Bool"];
+var Class = { __name__ : ["Class"]};
+var Enum = { };
 Xml.Element = "element";
 Xml.PCData = "pcdata";
 Xml.CData = "cdata";
@@ -1351,7 +1430,7 @@ com.akifox.asynchttp.AsyncHttp.errorSafe = true;
 com.akifox.asynchttp.AsyncHttp.userAgent = "akifox-asynchttp";
 com.akifox.asynchttp.AsyncHttp.UID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 com.akifox.asynchttp.AsyncHttpRequest.DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
-com.akifox.asynchttp.HttpHeaders.FOBIDDEN_HEADERS = ["user-agent","host","content-type","content-length"];
+com.akifox.asynchttp.HttpHeaders.FORBIDDEN_ON_REQUEST = ["user-agent","host","content-type","content-length"];
 com.akifox.asynchttp.HttpMethod.GET = "GET";
 com.akifox.asynchttp.HttpMethod.POST = "POST";
 com.akifox.asynchttp.HttpMethod.PUT = "PUT";

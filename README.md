@@ -81,7 +81,7 @@ import com.akifox.asynchttp.*;
     - [x] Block 'infinite loops' + 'too many redirects (max: 10)' **[v0.4+]**
   - [x] Choose if HTTP/1.0 or HTTP/1.1 **[v0.4+]**
   - [x] HTTP over SSL (HTTPS) support **[v0.4+]**
-  - [ ] Custom headers **[v0.4+]**
+  - [x] Custom headers + custom user-agent **[v0.4+]**
   - [x] Timeout on request **[v0.3.1+]**
 - Parsing
   - [x] Json to Anonymous Structure
@@ -319,7 +319,12 @@ var request = new AsyncHttpRequest({
 // String     | An unique ID to identify the request (generated)
 var fingerprint:String =  request.fingerprint;
 
-request.send();
+// You can also set or reset every property after the object creation
+// NOTE: after being sent the request will be made as immutable
+//       and the only way to change it would be cloning it ( request.clone() )
+request.timeout = 20; // example to set the timeout to 20 seconds
+
+request.send(); // start the request as set
 
 ````
 

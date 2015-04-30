@@ -36,7 +36,7 @@ class AsyncHttpRequest
   		if(options.http11 != null)					http11 = options.http11;
 			if(options.url != null)							url = options.url;
 			if(options.callback != null)				callback = options.callback;
-			if(options.headers != null)					_headers = options.headers;
+			if(options.headers != null)					_headers = options.headers.clone(); // get a mutable copy of the headers
 			if(options.timeout != null)					timeout = options.timeout;
 			if(options.method != null)					method = options.method;
 			if(options.content != null)					content = options.content;
@@ -71,6 +71,7 @@ class AsyncHttpRequest
 	}
 
 	public function finalise() {
+    _headers.finalise(); // makes the headers object immutable
 		_finalised = true; // it will not change
 	}
 
@@ -90,7 +91,7 @@ class AsyncHttpRequest
 	* ------------------------------------------------------------------------------------------
 	* Request headers
 	*/
-	private var _headers:HttpHeaders = null;
+	private var _headers:HttpHeaders = new HttpHeaders();
 	public var headers(get,never):HttpHeaders;
 	private function get_headers():HttpHeaders {
 		return _headers;
@@ -171,7 +172,7 @@ class AsyncHttpRequest
     switch(Type.getClassName(Type.getClass(value))) {
       case 'String':
         v = new URL(value);
-      case 'URL':
+      case 'com.akifox.asynchttp.URL' | 'URL':
         v = value.clone();
       default:
   			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');

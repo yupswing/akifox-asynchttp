@@ -555,6 +555,7 @@ class AsyncHttp
 
 		log('${request.fingerprint} INFO: Response $status ($contentLength bytes in $time s)\n> ${request.method} $url');
 		if (request.callback!=null)
+				headers.finalise(); // makes the headers object immutable
 		    request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
   	}
 
@@ -571,6 +572,7 @@ class AsyncHttp
 				headers.add(el.name.trim().toLowerCase(),el.value);
 			}
 		}
+		headers.finalise(); // makes the headers object immutable
 		return headers;
 	}
 
@@ -597,6 +599,7 @@ class AsyncHttp
 		var url:URL = request.url;
 		var status:Int = 0;
 		var headers = new HttpHeaders();
+		headers.finalise(); // makes the headers object immutable
 		var content:Dynamic = null;
 
 		var contentType:String = DEFAULT_CONTENT_TYPE;
@@ -697,6 +700,7 @@ class AsyncHttp
 			var url:URL = request.url;
 			var status:Int = 0;
 			var headers = new HttpHeaders();
+			headers.finalise(); // makes the headers object immutable
 			var content:Dynamic = null;
 
 			var contentType:String = DEFAULT_CONTENT_TYPE;
