@@ -3,7 +3,7 @@
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.3.2-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.4.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**

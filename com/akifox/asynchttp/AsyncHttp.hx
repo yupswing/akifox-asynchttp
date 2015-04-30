@@ -165,8 +165,8 @@ class AsyncHttp
 	public function send(request:HttpRequest) {
 
 		if (request.finalised) {
-			error('${request.fingerprint} ERROR: Unable to send the request: it was already sent before\n
-																		To send it again you have to clone it before.');
+			error('${request.fingerprint} ERROR: Unable to send the request: it was already sent before\n'+
+																		'To send it again you have to clone it before.');
 			return;
 		}
 
@@ -218,8 +218,8 @@ class AsyncHttp
 		if (url.ssl) {
 			s = new SocketSSL();
 			#if (!php && !java && !hxssl)
-			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n
-																		On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl`');
+			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n'+
+																		'On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl`');
 			#end
 		} else {
 			s = new SocketTCP();
