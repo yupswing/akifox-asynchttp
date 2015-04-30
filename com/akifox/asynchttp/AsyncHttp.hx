@@ -29,6 +29,7 @@ using StringTools;
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
+	import flash.net.URLRequestHeader;
 	import flash.events.Event;
 	import flash.events.HTTPStatusEvent;
 	import flash.events.SecurityErrorEvent;
@@ -39,8 +40,6 @@ using StringTools;
 	import haxe.Http;
 
 #end
-
-typedef AsyncHttpHeaders = Map<String,String>;
 
 #if (neko || cpp || java)
 
@@ -89,7 +88,7 @@ typedef AsyncHttpHeaders = Map<String,String>;
 
 	typedef Requester = {
 		var status:Int;
-		var headers:AsyncHttpHeaders;
+		var headers:HttpHeaders;
 		var socket:AbstractSocket;
 	}
 
@@ -121,7 +120,6 @@ class AsyncHttp
 
 	// Thread safe static
 
-	public static inline var USER_AGENT = "akifox-asynchttp";
 	#if js
 	public static inline var DEFAULT_CONTENT_TYPE = "text/plain";
 	#else
@@ -140,6 +138,7 @@ class AsyncHttp
 
 	public static var logEnabled:Bool = #if debug true #else false #end;
 	public static var errorSafe:Bool = #if debug false #else true #end;
+	public static var userAgent:String = "akifox-asynchttp";
 
 	public static inline function log(message:String) {
 		if (AsyncHttp.logEnabled) trace(message);
@@ -183,10 +182,10 @@ class AsyncHttp
 		return false;
 	}
 
-	public function determineContentType(headers:AsyncHttpHeaders):String {
+	public function determineContentType(headers:HttpHeaders):String {
 		var contentType = DEFAULT_CONTENT_TYPE;
 		if (headers!=null) {
-			if (headers.exists('content-type')) contentType = headers['content-type'];
+			if (headers.exists('content-type')) contentType = headers.get('content-type');
 		}
 		return contentType;
 	}
@@ -253,7 +252,7 @@ class AsyncHttp
 	// (could be called more than once in case of redirects)
 	private function useSocketRequest(url:URL,request:AsyncHttpRequest):Requester {
 
-		var headers = new AsyncHttpHeaders();
+		var headers = new HttpHeaders();
 		var status:Int = 0;
 
 		var s:AbstractSocket;
@@ -283,16 +282,31 @@ class AsyncHttp
 		  error('${request.fingerprint} ERROR: Request failed -> $msg');
 		}
 
-
 		if (connected) {
 
+			var httpVersion = "1.1";
+			if (!request.http11) httpVersion = "1.0";
+
 			try {
-				s.output.writeString('${request.method} ${url.resource}${url.querystring} HTTP/1.1\r\n');
-				log('${request.fingerprint} HTTP > ${request.method} ${url.resource}${url.querystring} HTTP/1.1');
-				s.output.writeString('User-Agent: '+USER_AGENT+'\r\n');
-				log('${request.fingerprint} HTTP > User-Agent: akifox-asynchttp');
+				s.output.writeString('${request.method} ${url.resource}${url.querystring} HTTP/$httpVersion\r\n');
+				log('${request.fingerprint} HTTP > ${request.method} ${url.resource}${url.querystring} HTTP/$httpVersion');
+				s.output.writeString('User-Agent: $userAgent\r\n');
+				log('${request.fingerprint} HTTP > User-Agent: $userAgent');
 				s.output.writeString('Host: ${url.host}\r\n');
 				log('${request.fingerprint} HTTP > Host: ${url.host}');
+
+				if (request.headers!=null) {
+					//custom headers
+					for (key in request.headers.keys()) {
+						var value = request.headers.get(key);
+						if (HttpHeaders.validateRequest(key)) {
+							s.output.writeString('$key: $value\r\n');
+							log('${request.fingerprint} HTTP > $key: $value');
+						}
+					}
+				}
+
+
 				if (request.content!=null) {
 					s.output.writeString('Content-Type: ${request.contentType}\r\n');
 					log('${request.fingerprint} HTTP > Content-Type: ${request.contentType}');
@@ -311,7 +325,7 @@ class AsyncHttp
 				status = 0;
 				s.close();
 				s = null;
-				headers = new AsyncHttpHeaders();
+				headers = new HttpHeaders();
 				connected = false;
 			}
 
@@ -331,7 +345,7 @@ class AsyncHttp
 					status = 0;
 					s.close();
 					s = null;
-					headers = new AsyncHttpHeaders();
+					headers = new HttpHeaders();
 					connected = false;
 				}
 				if (ln == '') break; //end of response headers
@@ -343,7 +357,7 @@ class AsyncHttp
 				} else {
 					var a = ln.split(':');
 					var key = a.shift().toLowerCase();
-					headers[key] = a.join(':').trim();
+					headers.add(key,a.join(':').trim());
 				}
 		  }
 		  // -- END RESPONSE HEADERS
@@ -378,7 +392,7 @@ class AsyncHttp
 		var redirect:Bool = false;
 
 		var s:AbstractSocket;
-		var headers = new AsyncHttpHeaders();
+		var headers = new HttpHeaders();
 		var status:Int = 0;
 
 		// redirects url list to avoid loops
@@ -399,7 +413,7 @@ class AsyncHttp
 				redirect = (status == 301 || status == 302 || status == 303 || status == 307);
 				// determine if redirection
 			  	if (redirect) {
-			  		var newlocation = headers['location'];
+			  		var newlocation = headers.get('location');
 			  		if (newlocation != "") {
 							var newURL = new URL(newlocation);
 							newURL.merge(url);
@@ -432,7 +446,7 @@ class AsyncHttp
 			// -- START RESPONSE CONTENT
 
 		  	// determine content properties
-			contentLength = Std.parseInt(headers['content-length']);
+			contentLength = Std.parseInt(headers.get('content-length'));
 			contentType = determineContentType(headers);
 			var contentKind:ContentKind = determineContentKind(contentType);
 			contentIsBinary = determineBinary(contentKind);
@@ -440,7 +454,7 @@ class AsyncHttp
 			// determine transfer mode
 			var mode:HttpTransferMode = HttpTransferMode.UNDEFINED;
 			if (contentLength>0) mode = HttpTransferMode.FIXED;
-			if (headers['transfer-encoding'] == 'chunked') mode = HttpTransferMode.CHUNKED;
+			if (headers.get('transfer-encoding') == 'chunked') mode = HttpTransferMode.CHUNKED;
 			log('${request.fingerprint} TRANSFER MODE: $mode');
 
 			var bytes_loaded:Int = 0;
@@ -549,12 +563,25 @@ class AsyncHttp
 	// ==========================================================================================
 	// URLLoader version (FLASH)
 
-	// Convert from the Flash format to a simpler Map<String,String>
-	private function convertHeaders(urlLoaderHeaders:Array<Dynamic>):AsyncHttpHeaders {
-		var headers = new AsyncHttpHeaders();
+	// Convert from the Flash format
+	private function convertFromFlashHeaders(urlLoaderHeaders:Array<URLRequestHeader>):HttpHeaders {
+		var headers = new HttpHeaders();
 		if (urlLoaderHeaders!=null) {
 			for (el in urlLoaderHeaders) {
-				headers[el.name.trim().toLowerCase()] = el.value;
+				headers.add(el.name.trim().toLowerCase(),el.value);
+			}
+		}
+		return headers;
+	}
+
+	private function convertToFlashHeaders(httpHeaders:HttpHeaders):Array<URLRequestHeader> {
+		var headers = new Array<URLRequestHeader>();
+		if (httpHeaders!=null) {
+			for (key in httpHeaders.keys()) {
+				var value = httpHeaders.get(key);
+				if (HttpHeaders.validateRequest(key)) {
+					headers.push(new URLRequestHeader(key,value));
+				}
 			}
 		}
 		return headers;
@@ -569,7 +596,7 @@ class AsyncHttp
 		// RESPONSE FIELDS
 		var url:URL = request.url;
 		var status:Int = 0;
-		var headers = new AsyncHttpHeaders();
+		var headers = new HttpHeaders();
 		var content:Dynamic = null;
 
 		var contentType:String = DEFAULT_CONTENT_TYPE;
@@ -588,6 +615,11 @@ class AsyncHttp
 			//urlRequest.dataFormat = (request.contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 		}
 
+		// if (request.headers!=null) { // TODO check if supported (it looks only on POST and limited)
+		// 	// custom headers
+		// 	urlRequest.requestHeaders = convertToFlashHeaders(request.headers);
+		// }
+
 		var httpstatusDone = false;
 
 		urlLoader.addEventListener("httpStatus", function(e:HTTPStatusEvent) {
@@ -605,7 +637,7 @@ class AsyncHttp
 			url = newURL;
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Response_Status $status');
-			try { headers = convertHeaders(e.responseHeaders); }
+			try { headers = convertFromFlashHeaders(e.responseHeaders); }
 			//content = null; // content will be retrive in EVENT.COMPLETE
 			contentType = determineContentType(headers);
 			contentIsBinary = determineBinary(determineContentKind(contentType));
@@ -664,7 +696,7 @@ class AsyncHttp
 			// RESPONSE FIELDS
 			var url:URL = request.url;
 			var status:Int = 0;
-			var headers = new AsyncHttpHeaders();
+			var headers = new HttpHeaders();
 			var content:Dynamic = null;
 
 			var contentType:String = DEFAULT_CONTENT_TYPE;

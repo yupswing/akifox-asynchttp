@@ -19,7 +19,7 @@ class AsyncHttpResponse {
 
 	// ==========================================================================================
 
-	public function new(request:AsyncHttpRequest,time:Float,url:URL,headers:AsyncHttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
+	public function new(request:AsyncHttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
 
 		_request = request;
 		_time = time;
@@ -37,13 +37,13 @@ class AsyncHttpResponse {
 		_filename = filename;
 
 		//set content type
-		if (_headers.exists('content-type')) _contentType = _headers['content-type'];
+		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
 		else _contentType = AsyncHttp.DEFAULT_CONTENT_TYPE;
 
 		//set content length
 		_contentLength = 0;
 		if (_headers.exists('content-length')) {
-			_contentLength = Std.parseInt(_headers['content-length']);
+			_contentLength = Std.parseInt(_headers.get('content-length'));
 		}
 		else if (content != null) {
 			_contentLength = _content.length; //works on Bytes and String
@@ -170,6 +170,10 @@ class AsyncHttpResponse {
 	private var _contentKind:ContentKind;
 
 	private var _request:AsyncHttpRequest;
+	public var request(get,never):AsyncHttpRequest;
+	private function get_request():AsyncHttpRequest {
+		return _request;
+	}
 
 	private var _fingerprint:String;
 	public var fingerprint(get,never):String;
@@ -188,9 +192,9 @@ class AsyncHttpResponse {
 		return _url.toString();
 	}
 
-	private var _headers:AsyncHttpHeaders;
-	public var headers(get,never):AsyncHttpHeaders;
-	private function get_headers():AsyncHttpHeaders {
+	private var _headers:HttpHeaders;
+	public var headers(get,never):HttpHeaders;
+	private function get_headers():HttpHeaders {
 		return _headers;
 	}
 

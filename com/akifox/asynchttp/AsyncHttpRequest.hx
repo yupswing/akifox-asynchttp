@@ -11,9 +11,10 @@ import com.akifox.asynchttp.AsyncHttp;
 typedef AsyncHttpRequestOptions = {
 		//? fingerprint : String,
     ? async: Bool,
+    ? http11: Bool,
     ? url: Dynamic,
     ? callback: AsyncHttpResponse->Void,
-		? headers : AsyncHttpHeaders,
+		? headers : HttpHeaders,
 		? timeout : Int,
 		? method: String,
 		? content: Dynamic,
@@ -32,6 +33,7 @@ class AsyncHttpRequest
 
 		if(options != null) {
 			if(options.async != null)						async = options.async;
+  		if(options.http11 != null)					http11 = options.http11;
 			if(options.url != null)							url = options.url;
 			if(options.callback != null)				callback = options.callback;
 			if(options.headers != null)					_headers = options.headers;
@@ -52,6 +54,7 @@ class AsyncHttpRequest
 	public function clone():AsyncHttpRequest {
 		return new AsyncHttpRequest({
 			async : this._async,
+      http11 : this._http11,
 			url : this._url,
 			callback : this._callback,
 			headers : this._headers,
@@ -87,15 +90,18 @@ class AsyncHttpRequest
 	* ------------------------------------------------------------------------------------------
 	* Request headers
 	*/
-	private var _headers:AsyncHttpHeaders;
-	public var headers(get,never):AsyncHttpHeaders;
-	private function get_headers():AsyncHttpHeaders {
+	private var _headers:HttpHeaders = null;
+	public var headers(get,never):HttpHeaders;
+	private function get_headers():HttpHeaders {
 		return _headers;
 	}
-	public function addHeader(header:String,value:String):AsyncHttpRequest {
-		_headers[header] = value;
-		return this;
-	}
+  private function set_headers(value:HttpHeaders):HttpHeaders {
+  	if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
+      return _headers;
+    }
+    return _headers = value;
+  }
 
    /*
 	* ------------------------------------------------------------------------------------------
@@ -130,6 +136,23 @@ class AsyncHttpRequest
 			return _async;
 		}
 		return _async = value;
+	}
+
+  /*
+	* ------------------------------------------------------------------------------------------
+	* HTTP/1.1 (otherwise HTTP/1.0)
+	*/
+	private var _http11:Bool=true;
+	public var http11(get,set):Bool;
+	private function get_http11():Bool {
+		return _http11;
+	}
+	private function set_http11(value:Bool):Bool {
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.http11] Can\'t modify a property when the instance is already sent');
+			return _http11;
+		}
+		return _http11 = value;
 	}
 
   /*
