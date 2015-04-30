@@ -17,6 +17,17 @@ https://gist.github.com/raivof/dcdb1d74f93d17132a1e
 
 Thanks mate!
 
+## Table of Contents
+
+ * [Install and use with Haxe](#install-and-use-with-haxe)
+  * [Use it in OpenFL Projects](#use-it-in-openfl-projects)
+ * [Features](#features)
+ * [What's new](#whats-new-040-breaking-api)
+ * [Important notes](#important-notes)
+ * [Examples](#examples)
+ * [Quick reference](#quick-reference)
+ * [Write to a file the response](#write-to-a-file-the-response)
+
 
 ## Install and use with Haxe
 
@@ -42,6 +53,7 @@ After installing the library via Haxelib, add the library reference in your ```p
 
 ```
 <haxelib name="akifox-asynchttp" />
+<haxelib name="hxssl" />
 ```
 
 and finally you can import it in your project files
@@ -81,7 +93,7 @@ import com.akifox.asynchttp.*;
 
 ---
 
-## What's new 0.4.0 [breaking API]
+## What's new 0.4.0 *[breaking API]*
 
 - SSL support (cpp+neko using [hxssl](https://github.com/tong/hxssl), java using standard haxe)
 - Removed autoparse option
@@ -103,14 +115,14 @@ you can pass every setting as options
 new AsyncHttpRequest({url:'urlString',callback:callbackFunction});
 ````
 
-Fix your code! This edit was necessary to make future improvements easier with no breaking api.
+Fix your code! This edit was necessary to make future improvements easier with less future API changes.
 
 ## What's new 0.3.1 (fixed issue #1)
 
 - Timeout option (request)
 - Handling unexpected connection termination
 
-## What's new (0.2 to 0.3) [breaking API]
+## What's new 0.3 *[breaking API]*
 
 - The library doesn't rely on OpenFL anymore and it is a pure Haxe library!
 - Flash target use the default URLLoader (async)
@@ -119,6 +131,10 @@ Fix your code! This edit was necessary to make future improvements easier with n
 - The library is now thread-safe (major problems in 0.2)
 - Support for redirection (HTTP STATUS 30x)
 - Using sockets make requests around 50% faster than OpenFL URLLoader
+
+## What's new 0.2
+
+- First public release (relying on OpenFL)
 
 ---
 
