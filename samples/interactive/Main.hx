@@ -21,20 +21,20 @@ class Main {
 			while (true) {
 				var input = Sys.stdin().readLine();
 				if (input=="") break;
-				new AsyncHttpRequest(input,onResponse).send();
+				new HttpRequest({url:input,callback:onResponse}).send();
 			}
 
 		trace('>> Goodbye!');
 
 #else
 
-		new AsyncHttpRequest("http://wikipedia.com/wiki/wikipedia",onResponse).send();
+		new HttpRequest({url:"http://wikipedia.com/wiki/wikipedia",callback:onResponse}).send();
 
 #end
 
 	}
 
-	static function onResponse(response:AsyncHttpResponse):Void {
+	static function onResponse(response:HttpResponse):Void {
 		trace('-------------------------');
 		trace(response);
 		if (response.isOK) {

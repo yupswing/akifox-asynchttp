@@ -51,21 +51,22 @@ class Main extends Sprite {
 		index++;
 
 
-		var request = new AsyncHttpRequest(images[index-1],
-								function(response:AsyncHttpResponse) {
-									if (response.isOK) {
-										trace('DONE (HTTP STATUS ${response.status})');
-										// HERE IS THE MAGIC!
-										var bitmap = new Bitmap(response.toBitmapData());
-										// END OF THE MAGIC...
-										bitmap.x = Math.random()*(Lib.current.stage.stageWidth-bitmap.width);
-										bitmap.y = Math.random()*(Lib.current.stage.stageHeight-bitmap.height);
-										addChild(bitmap);
-									} else {
-										trace('ERROR (HTTP STATUS ${response.status})');
-									}
-								}
-					      );
+		var request = new HttpRequest({
+								url : images[index-1],
+								callback : function(response:HttpResponse) {
+															if (response.isOK) {
+																trace('DONE (HTTP STATUS ${response.status})');
+																// HERE IS THE MAGIC!
+																var bitmap = new Bitmap(response.toBitmapData());
+																// END OF THE MAGIC...
+																bitmap.x = Math.random()*(Lib.current.stage.stageWidth-bitmap.width);
+																bitmap.y = Math.random()*(Lib.current.stage.stageHeight-bitmap.height);
+																addChild(bitmap);
+															} else {
+																trace('ERROR (HTTP STATUS ${response.status})');
+															}
+														}
+								});
 		request.send();
 	}
 

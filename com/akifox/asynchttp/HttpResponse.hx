@@ -15,13 +15,13 @@ It is the Response Class that will be passed to a request callback
 
 import haxe.Json;
 
-class AsyncHttpResponse {
+class HttpResponse {
 
 	// ==========================================================================================
 
-	public function new(fingerprint:String,time:Float,url:String,headers:AsyncHttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String,autoParse:Bool) {
-		
-		_fingerprint = fingerprint;
+	public function new(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
+
+		_request = request;
 		_time = time;
 
 		_url = url;
@@ -34,17 +34,16 @@ class AsyncHttpResponse {
 		if (!_contentIsBinary) _content = toText();
 		else _content = _contentRaw;
 
-		_autoParse = autoParse;
 		_filename = filename;
 
 		//set content type
-		if (_headers.exists('content-type')) _contentType = _headers['content-type'];
+		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
 		else _contentType = AsyncHttp.DEFAULT_CONTENT_TYPE;
 
 		//set content length
 		_contentLength = 0;
 		if (_headers.exists('content-length')) {
-			_contentLength = Std.parseInt(_headers['content-length']);
+			_contentLength = Std.parseInt(_headers.get('content-length'));
 		}
 		else if (content != null) {
 			_contentLength = _content.length; //works on Bytes and String
@@ -53,19 +52,12 @@ class AsyncHttpResponse {
 		// determine content kind
 		_contentKind = new AsyncHttp().determineContentKind(_contentType);
 
-		// AUTOPARSE DISABLED (TODO)
-/*		if (_autoParse) {
-			if (_contentKind==ContentKind.XML) _content = toXml(); // problem on Bus Error for Neko
-			if (_contentKind==ContentKind.JSON) _content = toJson();
-			// if (_contentKind==ContentKind.IMAGE) _content = toBitmapData();
-			_autoParsed = true;
-		}*/
 	}
 
 	// ==========================================================================================
 
 	public function toString():String {
-		return '[AsyncHttpResponse <$_fingerprint> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
+		return '[HttpResponse <$_fingerprint> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
 	}
 
 	// ==========================================================================================
@@ -77,7 +69,7 @@ class AsyncHttpResponse {
 	}
 	public var isText(get,never):Bool;
 	private function get_isText():Bool {
-		return !_contentIsBinary; 
+		return !_contentIsBinary;
 	}
 	public var isXml(get,never):Bool;
 	private function get_isXml():Bool { return (_contentKind==ContentKind.XML); }
@@ -93,33 +85,27 @@ class AsyncHttpResponse {
 		try {
 			_contentXml = Xml.parse(toText());
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			if (_autoParse && !_autoParsed) _isOK = false;
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Xml -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Xml -> $msg');
 		}
 		return _contentXml;
 	}
-	
+
 	public function toJson():Dynamic {
 		var _contentJson:Dynamic = null;
 		try {
 			_contentJson = haxe.Json.parse(toText());
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			if (_autoParse && !_autoParsed) _isOK = false;
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Json -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Json -> $msg');
 		}
 		return _contentJson;
 	}
-	
+
 	public function toText():String {
 		var _contentText:String = null;
 		try {
 			_contentText = Std.string(_contentRaw);
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			if (_autoParse && !_autoParsed) _isOK = false;
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Text -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Text -> $msg');
 		}
 		return _contentText;
 	}
@@ -142,7 +128,7 @@ class AsyncHttpResponse {
 		// 	loaded = true;
 		// });
 		// loader.loadBytes(_content);
-		// while(!loaded) { 
+		// while(!loaded) {
 		// 	trace(haxe.Timer.stamp());
 		// }
 
@@ -157,9 +143,7 @@ class AsyncHttpResponse {
 			_contentBitmapData = openfl.display.BitmapData.fromBytes(bytearray);
 			#end
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			if (_autoParse && !_autoParsed) _isOK = false;
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Image -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Image -> $msg');
 		}
 		return _contentBitmapData;
 	}
@@ -170,21 +154,32 @@ class AsyncHttpResponse {
 
 	private var _contentKind:ContentKind;
 
+	private var _request:HttpRequest;
+	public var request(get,never):HttpRequest;
+	private function get_request():HttpRequest {
+		return _request;
+	}
+
 	private var _fingerprint:String;
 	public var fingerprint(get,never):String;
 	private function get_fingerprint():String {
-		return _fingerprint;
+		return _request.fingerprint;
 	}
 
-	private var _url:String;
-	public var url(get,never):String;
-	private function get_url():String {
+	private var _url:URL;
+	public var url(get,never):URL;
+	private function get_url():URL {
 		return _url;
 	}
 
-	private var _headers:AsyncHttpHeaders;
-	public var headers(get,never):AsyncHttpHeaders;
-	private function get_headers():AsyncHttpHeaders {
+	public var urlString(get,never):String;
+	private function get_urlString():String {
+		return _url.toString();
+	}
+
+	private var _headers:HttpHeaders;
+	public var headers(get,never):HttpHeaders;
+	private function get_headers():HttpHeaders {
 		return _headers;
 	}
 
@@ -228,13 +223,6 @@ class AsyncHttpResponse {
 	public var time(get,never):Float;
 	private function get_time():Float {
 		return _time;
-	}
-
-	private var _autoParsed:Bool = false;
-	private var _autoParse:Bool;
-	public var autoParse(get,never):Bool;
-	private function get_autoParse():Bool {
-		return _autoParse;
 	}
 
 	private var _filename:String;

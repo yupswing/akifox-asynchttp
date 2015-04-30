@@ -1,0 +1,4 @@
+-main Main
+-cpp output/cpp
+-lib akifox-asynchttp
+-lib hxssl
