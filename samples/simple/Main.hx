@@ -35,22 +35,21 @@ class Main {
 
 
 		// NOTE:
-		// An AsyncHttpRequest is mutable until sent
-		// An AsyncHttpResponse is immutable
+		// An HttpRequest is mutable until sent
+		// An HttpResponse is immutable
 
 		// This is a basic GET example that shows all the exposed variables
-		var request = new AsyncHttpRequest("http://www.apple.com",
-								function(response:AsyncHttpResponse) {
-									if (response.isOK) {
-										trace('DONE (HTTP STATUS ${response.status})');
-									} else {
-										trace('ERROR (HTTP STATUS ${response.status})');
+		var request = new HttpRequest({
+					   url : "http://www.apple.com",
+				callback : function(response:HttpResponse) {
+										if (response.isOK) {
+											trace('DONE (HTTP STATUS ${response.status})');
+										} else {
+											trace('ERROR (HTTP STATUS ${response.status})');
+										}
 									}
-								}  
-					      );
-		request.autoParse = false; // set autoParse to false (it is already the default)
+			});
 		request.send();
-		request.autoParse = false; // can't modify a property after sending! (it will throw an error)
 
 
 		// --------------------------------------------------------------------------------------------------
@@ -60,11 +59,13 @@ class Main {
 		// it is specified an host + a port + a path + a querystring
 		// but the host does not exists, so it will get a status 0
 		// (the handler is anonymous)
-		new AsyncHttpRequest("http://thishostdoesnotexists.com:8080/mypage?field=test&field2=test",
-							 function(response:AsyncHttpResponse){
-								// anonymous response handler
-						 		trace(response.fingerprint + " EXAMPLE > Failed request because of host (status: " + response.status + " time: " + response.time + "s)");
-							 }).send();
+		new HttpRequest({
+					 url : "http://thishostdoesnotexists.com:8080/mypage?field=test&field2=test",
+			callback : function(response:HttpResponse){
+									// anonymous response handler
+									trace(response.fingerprint + " EXAMPLE > Failed request because of host (status: " + response.status + " time: " + response.time + "s)");
+								 }
+			}).send();
 
 
 		// --------------------------------------------------------------------------------------------------
@@ -74,20 +75,20 @@ class Main {
 		// The order of the responses could be not the same as the order of the requests
 
 		// Prepare and send (saving the fingerprint)
-		var request = new AsyncHttpRequest("http://en.wikipedia.org/wiki/Haxe",wikipediaPage);
+		var request = new HttpRequest({url:"http://en.wikipedia.org/wiki/Haxe",callback:wikipediaPage});
 		wikipediaHaxeFingerprint = request.fingerprint;
 		request.send();
 
 		// Send directly
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/OpenFL",wikipediaPage).send(); 		// good
-		new AsyncHttpRequest("http://en.wikipedia.org/wiki/Akifox",wikipediaPage).send(); 		// no page (yet)
-		new AsyncHttpRequest("http://en.wiKKipedia.org/wiki/Wikipedia",wikipediaPage).send(); // wrong host
+		new HttpRequest({url:"http://en.wikipedia.org/wiki/OpenFL",callback:wikipediaPage}).send(); 		// good
+		new HttpRequest({url:"http://en.wikipedia.org/wiki/Akifox",callback:wikipediaPage}).send(); 		// no page (yet)
+		new HttpRequest({url:"http://en.wiKKipedia.org/wiki/Wikipedia",callback:wikipediaPage}).send(); // wrong host
 
 	}
 
 	static var wikipediaHaxeFingerprint:String = null;
 
-	static function wikipediaPage(response:AsyncHttpResponse) {
+	static function wikipediaPage(response:HttpResponse) {
 		// check the fingerprint to identify a specific request for this handler
 		if (wikipediaHaxeFingerprint == response.fingerprint) {
 			trace(response.fingerprint + ' EXAMPLE > HEY, this was the Haxe Wikipedia page request!');

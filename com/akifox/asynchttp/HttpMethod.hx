@@ -8,7 +8,7 @@ package com.akifox.asynchttp;
 **/
 
 
-class AsyncHttpMethod {
+class HttpMethod {
   // TODO bad implementation should be done with enums
   public static inline var GET = "GET";
   public static inline var POST = "POST";
@@ -18,7 +18,7 @@ class AsyncHttpMethod {
   public static inline var DEFAULT_METHOD = GET;
 
   public static function validate(value:String) {
-  	if (value==null || AsyncHttpMethod.METHODS.indexOf(value)==-1) value = DEFAULT_METHOD;
+  	if (value==null || HttpMethod.METHODS.indexOf(value)==-1) value = DEFAULT_METHOD;
   	return value;
   }
 }
