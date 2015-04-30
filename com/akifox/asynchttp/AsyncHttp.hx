@@ -9,9 +9,9 @@ package com.akifox.asynchttp;
 @version 0.4.0
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
-#### Asyncronous HTTP Request HAXE Library
-The akifox-asynchttp library provide a multi-threaded system
-to make HTTP request and get responses.
+#### Asyncronous HTTP+HTTPS Request HAXE Library
+The akifox-asynchttp library provide a multi-threaded tool
+to handle HTTP+HTTPS requests with a common API.
 
 #### Notes:
  * Inspired by Raivof "OpenFL: URLLoader() alternative using raw socket"
@@ -23,9 +23,9 @@ import haxe.io.Bytes;
 
 using StringTools;
 
-
 #if flash
 
+	// Standard Flash URLLoader
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
@@ -37,12 +37,12 @@ using StringTools;
 
 #elseif js
 
+	// Standard Haxe Http
 	import haxe.Http;
 
-#end
+#elseif (neko || cpp || java)
 
-#if (neko || cpp || java)
-
+	// Threading
 	#if neko
 		typedef Thread = neko.vm.Thread;
 		typedef Lib = neko.Lib;
@@ -54,7 +54,7 @@ using StringTools;
 		typedef Lib = cpp.Lib;
 	#end
 
-
+	// Sockets
 	typedef AbstractSocket = {
 		var input(default,null) : haxe.io.Input;
 		var output(default,null) : haxe.io.Output;
@@ -80,17 +80,24 @@ using StringTools;
 		typedef SocketSSL = sys.ssl.Socket;
 		// #end
 	#else
-	typedef SocketSSL = sys.net.Socket; // NO SSL
+	typedef SocketSSL = sys.net.Socket; // NO SSL (fallback to HTTP Socket)
 	#end
 
 	// Host
 	typedef Host = sys.net.Host;
 
+	// Used by httpViaSocketConnect() to exchange data with httpViaSocket()
 	typedef Requester = {
 		var status:Int;
 		var headers:HttpHeaders;
 		var socket:AbstractSocket;
 	}
+
+#else
+
+	#error "Platform not supported (yet!)\n
+	Post a request to the official repository:\n
+	https://github.com/yupswing/akifox-asynchttp/issues"
 
 #end
 
@@ -113,37 +120,30 @@ typedef ContentKindMatch = {
 	var regex:EReg;
 }
 
+// DEPRECATED Kept for 0.1.x to 0.3.x compatibility
+typedef AsyncHttpResponse = HttpResponse;
+typedef AsyncHttpRequest = HttpRequest;
+
 class AsyncHttp
 {
 
 	// ==========================================================================================
 
-	// Thread safe static
-
-	#if js
-	public static inline var DEFAULT_CONTENT_TYPE = "text/plain";
-	#else
-	public static inline var DEFAULT_CONTENT_TYPE = "application/octet-stream";
-	#end
-	public static inline var DEFAULT_FILENAME = "untitled";
-
-	public static inline var MAX_REDIRECTION:Int = 10; // 10 jumps allowed
-
-	private static var _contentKindMatch:Array<ContentKindMatch> = [
-		{kind:ContentKind.IMAGE,regex:~/^image\/(jpe?g|png|gif)/i},
-		{kind:ContentKind.XML,regex:~/(application\/xml|text\/xml|\+xml)/i},
-		{kind:ContentKind.JSON,regex:~/^(application\/json|\+json)/i},
-		{kind:ContentKind.TEXT,regex:~/(^text|application\/javascript)/i} //text is the last one
-	];
-
+	// Global settings (customisable)
 	public static var logEnabled:Bool = #if debug true #else false #end;
 	public static var errorSafe:Bool = #if debug false #else true #end;
 	public static var userAgent:String = "akifox-asynchttp";
+	public static var maxRedirections:Int = 10;
 
+	// ==========================================================================================
+
+	// Logging trace (enabled by default on -debug)
 	public static inline function log(message:String) {
 		if (AsyncHttp.logEnabled) trace(message);
 	}
 
+	// Error trace (throw by default on -debug)
+	// NOTE: to be error-safe it only make traces if not -debug
 	public static inline function error(message:String) {
 		if (AsyncHttp.errorSafe) {
 			trace(message);
@@ -154,10 +154,6 @@ class AsyncHttp
 
 	// ==========================================================================================
 
-	public var REGEX_FILENAME = ~/([^?\/]*)($|\?.*)/;
-
-	// ==========================================================================================
-
 	public function new()
 	{
 		// One instance every Request.send() to be thread-safe
@@ -165,51 +161,14 @@ class AsyncHttp
 
 	// ==========================================================================================
 
-	// The content kind is used for autoParsing and determine if a content is Binary or Text
-	public function determineContentKind(contentType:String):ContentKind {
-		var contentKind = ContentKind.BYTES;
-		for (el in _contentKindMatch) {
-			if (el.regex.match(contentType)) {
-				contentKind = el.kind;
-				break;
-			}
+
+	public function send(request:HttpRequest) {
+
+		if (request.finalised) {
+			error('${request.fingerprint} ERROR: Unable to send the request: it was already sent before\n
+																		To send it again you have to clone it before.');
+			return;
 		}
-		return contentKind;
-	}
-
-	public function determineBinary(contentKind:ContentKind):Bool {
-		if (contentKind == ContentKind.BYTES || contentKind == ContentKind.IMAGE) return true;
-		return false;
-	}
-
-	public function determineContentType(headers:HttpHeaders):String {
-		var contentType = DEFAULT_CONTENT_TYPE;
-		if (headers!=null) {
-			if (headers.exists('content-type')) contentType = headers.get('content-type');
-		}
-		return contentType;
-	}
-
-	public function determineFilename(url:String):String {
-		var filename:String = "";
-		var rx = REGEX_FILENAME;
-		if (rx.match(url)) {
-			filename = rx.matched(1);
-		}
-		if (filename=="") filename = AsyncHttp.DEFAULT_FILENAME;
-		return filename;
-	}
-
-	// ==========================================================================================
-
-	public function elapsedTime(start:Float):Float {
-		return Std.int((Timer.stamp() - start)*1000)/1000;
-	}
-
-	// ==========================================================================================
-
-
-	public function send(request:AsyncHttpRequest) {
 
 		request.finalise(); // request will not change
 
@@ -217,26 +176,22 @@ class AsyncHttp
 
 			if (request.async) {
 				// Asynchronous (with a new thread)
-				var worker = Thread.create(socketThread);
+				var worker = Thread.create(httpViaSocket_Threaded);
 				worker.sendMessage(request);
 			} else {
 				// Synchronous (same thread)
-				useSocket(request);
+				httpViaSocket(request);
 			}
 
 		#elseif flash
 
 			// URLLoader version (FLASH)
-			useURLLoader(request);
+			httpViaUrlLoader(request);
 
 		#elseif js
 
 			// Standard Haxe HTTP
-			useHaxeHttp(request);
-
-		#else
-
-		  error('ERROR: Platform not supported');
+			httpViaHaxeHttp(request);
 
 		#end
 
@@ -247,10 +202,14 @@ class AsyncHttp
 	// ==========================================================================================
 	// Multi-thread version for neko, CPP + JAVA
 
+	private function httpViaSocket_Threaded() {
+		var request:HttpRequest = Thread.readMessage(true);
+		httpViaSocket(request);
+	}
 
 	// Open a socket, send a request and get the headers
 	// (could be called more than once in case of redirects)
-	private function useSocketRequest(url:URL,request:AsyncHttpRequest):Requester {
+	private function httpViaSocketConnect(url:URL,request:HttpRequest):Requester {
 
 		var headers = new HttpHeaders();
 		var status:Int = 0;
@@ -260,7 +219,7 @@ class AsyncHttp
 			s = new SocketSSL();
 			#if (!php && !java && !hxssl)
 			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n
-																		On Neko/CPP the library support hxssl (you have to install and reference it with `-lib hxssl`');
+																		On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl`');
 			#end
 		} else {
 			s = new SocketTCP();
@@ -305,7 +264,6 @@ class AsyncHttp
 						}
 					}
 				}
-
 
 				if (request.content!=null) {
 					s.output.writeString('Content-Type: ${request.contentType}\r\n');
@@ -366,16 +324,10 @@ class AsyncHttp
 		return {status:status,socket:s,headers:headers};
 	}
 
-	private function socketThread() {
-		var request:AsyncHttpRequest = Thread.readMessage(true);
-		useSocket(request);
-	}
-
-	// Ask useSocketRequest to open a socket and send the request
+	// Ask httpViaSocketConnect to open a socket and send the request
 	// then parse the response and handle it to the callback
-	private function useSocket(request:AsyncHttpRequest)
+	private function httpViaSocket(request:HttpRequest)
 	{
-		//var request:AsyncHttpRequest = Thread.readMessage(true);
 		if (request==null) return;
 
 		var start = Timer.stamp();
@@ -386,7 +338,7 @@ class AsyncHttp
 		var contentType:String=null;
 		var contentLength:Int=0;
 		var contentIsBinary:Bool=false;
-		var filename:String = determineFilename(request.url.toString());
+		var filename:String = DEFAULT_FILENAME;
 
 		var connected:Bool = false;
 		var redirect:Bool = false;
@@ -400,7 +352,7 @@ class AsyncHttp
 		redirectChain.push(url.toString());
 
 		do {
-			var req:Requester = useSocketRequest(url,request);
+			var req:Requester = httpViaSocketConnect(url,request);
 			status = req.status;
 			s = req.socket;
 			headers = req.headers;
@@ -417,7 +369,7 @@ class AsyncHttp
 			  		if (newlocation != "") {
 							var newURL = new URL(newlocation);
 							newURL.merge(url);
-			  			if (redirectChain.length<=MAX_REDIRECTION && redirectChain.indexOf(newURL.toString())==-1) {
+			  			if (redirectChain.length<=maxRedirections && redirectChain.indexOf(newURL.toString())==-1) {
 								url = newURL;
 								redirectChain.push(url.toString());
 								log('${request.fingerprint} REDIRECT: $status -> ${url}');
@@ -429,8 +381,8 @@ class AsyncHttp
 								s.close();
 								s = null;
 								connected = false;
-								if (redirectChain.length>MAX_REDIRECTION) {
-									error('${request.fingerprint} ERROR: Too many redirection (Max $MAX_REDIRECTION)\n'+redirectChain.join('-->'));
+								if (redirectChain.length>maxRedirections) {
+									error('${request.fingerprint} ERROR: Too many redirection (Max $maxRedirections)\n'+redirectChain.join('-->'));
 								} else {
 									error('${request.fingerprint} ERROR: Redirection loop\n'+redirectChain.join('-->')+'-->'+redirectChain[0]);
 								}
@@ -442,6 +394,8 @@ class AsyncHttp
 		} while(redirect);
 
 		if (connected) {
+
+			filename = determineFilename(url.toString());
 
 			// -- START RESPONSE CONTENT
 
@@ -533,16 +487,11 @@ class AsyncHttp
 					bytes = null;
 			}
 
-			//if (contentIsBinary)
-			//	content = contentBytes;
-			//else
-			//	content = contentBytes.toString();
-
-			// The response content is always given in bytes and handled by the AsyncHttpResponse object
+			// The response content is always given in bytes and handled by the HttpResponse object
 			content = contentBytes;
 			contentBytes = null;
 
-		  	// -- END RESPONSE
+		  // -- END RESPONSE
 
 		}
 
@@ -554,18 +503,19 @@ class AsyncHttp
 		var time:Float = elapsedTime(start);
 
 		log('${request.fingerprint} INFO: Response $status ($contentLength bytes in $time s)\n> ${request.method} $url');
-		if (request.callback!=null)
+		if (request.callback!=null) {
 				headers.finalise(); // makes the headers object immutable
-		    request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
-  	}
+		    request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		}
+  }
 
-  	#elseif flash
+  #elseif flash
 
 	// ==========================================================================================
 	// URLLoader version (FLASH)
 
 	// Convert from the Flash format
-	private function convertFromFlashHeaders(urlLoaderHeaders:Array<URLRequestHeader>):HttpHeaders {
+	private function convertFromFlashHeaders(urlLoaderHeaders:Array<Dynamic>):HttpHeaders {
 		var headers = new HttpHeaders();
 		if (urlLoaderHeaders!=null) {
 			for (el in urlLoaderHeaders) {
@@ -576,7 +526,7 @@ class AsyncHttp
 		return headers;
 	}
 
-	private function convertToFlashHeaders(httpHeaders:HttpHeaders):Array<URLRequestHeader> {
+	private function convertToFlashHeaders(httpHeaders:HttpHeaders):Array<Dynamic> {
 		var headers = new Array<URLRequestHeader>();
 		if (httpHeaders!=null) {
 			for (key in httpHeaders.keys()) {
@@ -589,7 +539,7 @@ class AsyncHttp
 		return headers;
 	}
 
-	private function useURLLoader(request:AsyncHttpRequest) {
+	private function httpViaUrlLoader(request:HttpRequest) {
 		if (request==null) return;
 
 		var urlLoader:URLLoader = new URLLoader();
@@ -603,7 +553,7 @@ class AsyncHttp
 		var content:Dynamic = null;
 
 		var contentType:String = DEFAULT_CONTENT_TYPE;
-		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));;
+		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
 
 		var filename:String = determineFilename(request.url.toString());
 		urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
@@ -635,9 +585,9 @@ class AsyncHttp
 		});
 
 		urlLoader.addEventListener("httpResponseStatus", function(e:HTTPStatusEvent) {
-			var newUrl = new URL(e.responseURL);
-			newURL.merge(request.url);
-			url = newURL;
+			var newUrl:URL = new URL(e.responseURL);
+			newUrl.merge(request.url);
+			url = newUrl;
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Response_Status $status');
 			try { headers = convertFromFlashHeaders(e.responseHeaders); }
@@ -655,16 +605,16 @@ class AsyncHttp
 		    status = e.errorID;
 		    error('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
-		urlLoader.addEventListener(SecurityErrorEvent.SECurity_ERROR, function(e:SecurityErrorEvent) {
+		urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = 0;
 		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
@@ -675,7 +625,7 @@ class AsyncHttp
 		    content = Bytes.ofString(e.target.data);
 		    log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
@@ -685,64 +635,121 @@ class AsyncHttp
 		    var time = elapsedTime(start);
 		    error('${request.fingerprint} ERROR: Request failed -> $msg');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		}
 	}
 
-  	#elseif js
+	#elseif js
 
-		private function useHaxeHttp(request:AsyncHttpRequest) {
-			if (request==null) return;
-			var start = Timer.stamp();
+	private function httpViaHaxeHttp(request:HttpRequest) {
+		if (request==null) return;
+		var start = Timer.stamp();
 
-			// RESPONSE FIELDS
-			var url:URL = request.url;
-			var status:Int = 0;
-			var headers = new HttpHeaders();
-			headers.finalise(); // makes the headers object immutable
-			var content:Dynamic = null;
+		// RESPONSE FIELDS
+		var url:URL = request.url;
+		var status:Int = 0;
+		var headers = new HttpHeaders();
+		headers.finalise(); // makes the headers object immutable
+		var content:Dynamic = null;
 
-			var contentType:String = DEFAULT_CONTENT_TYPE;
-			var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
+		var contentType:String = DEFAULT_CONTENT_TYPE;
+		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
 
-			var filename:String = determineFilename(url.toString());
+		var filename:String = determineFilename(url.toString());
 
-			var r = new haxe.Http(url.toString());
-			r.async = true; //default
-			//r.setHeader("User-Agent",USER_AGENT); //give warning in Chrome
-			if (request.content!=null) {
-				r.setPostData(Std.string(request.content));
-			}
-
-			var httpstatusDone = false;
-
-			r.onError = function(msg:String) {
-		    	error('${request.fingerprint} ERROR: Request failed -> $msg');
-		    	var time = elapsedTime(start);
-		    	if (request.callback!=null)
-		    		request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
-			};
-
-			r.onData = function(data:String) {
-				if (!httpstatusDone) status = 200;
-		    	var time = elapsedTime(start);
-		    	content = data;
-		    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
-		    	if (request.callback!=null)
-		    		request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
-			};
-
-			r.onStatus = function(http_status:Int) {
-				status = http_status;
-			    log('${request.fingerprint} INFO: Response HTTP Status $status');
-				httpstatusDone = true; //flash does not call this event
-			}
-
-			r.request(request.content!=null);
+		var r = new haxe.Http(url.toString());
+		r.async = true; //default
+		//r.setHeader("User-Agent",USER_AGENT); //give warning in Chrome
+		if (request.content!=null) {
+			r.setPostData(Std.string(request.content));
 		}
 
+		var httpstatusDone = false;
+
+		r.onError = function(msg:String) {
+	    	error('${request.fingerprint} ERROR: Request failed -> $msg');
+	    	var time = elapsedTime(start);
+	    	if (request.callback!=null)
+	    		request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		};
+
+		r.onData = function(data:String) {
+			if (!httpstatusDone) status = 200;
+	    	var time = elapsedTime(start);
+	    	content = data;
+	    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
+	    	if (request.callback!=null)
+	    		request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+		};
+
+		r.onStatus = function(http_status:Int) {
+			status = http_status;
+		    log('${request.fingerprint} INFO: Response HTTP Status $status');
+			httpstatusDone = true; //flash does not call this event
+		}
+
+		r.request(request.content!=null);
+	}
+
 	#end
+
+	// ==========================================================================================
+
+	public function elapsedTime(start:Float):Float {
+		return Std.int((Timer.stamp() - start)*1000)/1000;
+	}
+
+	// ==========================================================================================
+
+	#if js
+	public static inline var DEFAULT_CONTENT_TYPE = "text/plain";
+	#else
+	public static inline var DEFAULT_CONTENT_TYPE = "application/octet-stream";
+	#end
+	public static inline var DEFAULT_FILENAME = "untitled";
+
+	private static var _contentKindMatch:Array<ContentKindMatch> = [
+		{kind:ContentKind.IMAGE,regex:~/^image\/(jpe?g|png|gif)/i},
+		{kind:ContentKind.XML,regex:~/(application\/xml|text\/xml|\+xml)/i},
+		{kind:ContentKind.JSON,regex:~/^(application\/json|\+json)/i},
+		{kind:ContentKind.TEXT,regex:~/(^text|application\/javascript)/i} //text is the last one
+	];
+
+	// The content kind is used for autoParsing and determine if a content is Binary or Text
+	public function determineContentKind(contentType:String):ContentKind {
+		var contentKind = ContentKind.BYTES;
+		for (el in _contentKindMatch) {
+			if (el.regex.match(contentType)) {
+				contentKind = el.kind;
+				break;
+			}
+		}
+		return contentKind;
+	}
+
+	public function determineBinary(contentKind:ContentKind):Bool {
+		if (contentKind == ContentKind.BYTES || contentKind == ContentKind.IMAGE) return true;
+		return false;
+	}
+
+	public function determineContentType(headers:HttpHeaders):String {
+		var contentType = DEFAULT_CONTENT_TYPE;
+		if (headers!=null) {
+			if (headers.exists('content-type')) contentType = headers.get('content-type');
+		}
+		return contentType;
+	}
+
+	public function determineFilename(url:String):String {
+		var filename:String = "";
+		var rx = ~/([^?\/]*)($|\?.*)/;
+		if (rx.match(url)) {
+			filename = rx.matched(1);
+		}
+		if (filename=="") filename = AsyncHttp.DEFAULT_FILENAME;
+		return filename;
+	}
 
 	// ==========================================================================================
 

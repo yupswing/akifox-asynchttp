@@ -8,12 +8,12 @@ import com.akifox.asynchttp.AsyncHttp;
 @licence MIT Licence
 **/
 
-typedef AsyncHttpRequestOptions = {
+typedef HttpRequestOptions = {
 		//? fingerprint : String,
     ? async: Bool,
     ? http11: Bool,
     ? url: Dynamic,
-    ? callback: AsyncHttpResponse->Void,
+    ? callback: HttpResponse->Void,
 		? headers : HttpHeaders,
 		? timeout : Int,
 		? method: String,
@@ -22,13 +22,17 @@ typedef AsyncHttpRequestOptions = {
 		? contentIsBinary: Bool
 }
 
-class AsyncHttpRequest
+class HttpRequest
 {
 	private var _finalised:Bool = false; //it was .sent at least once (no edit allowed)
+	public var finalised(get,never):Bool;
+	private function get_finalised():Bool {
+		return _finalised;
+	}
 
 	// ==========================================================================================
 
-	public function new(?options:AsyncHttpRequestOptions=null) {
+	public function new(?options:HttpRequestOptions=null) {
 		_fingerprint = new AsyncHttp().randomUID(8);
 
 		if(options != null) {
@@ -46,13 +50,13 @@ class AsyncHttpRequest
 	}
 
 	public function toString():String {
-		return '[AsyncHttpRequest <$_fingerprint> ($_method $_url)]';
+		return '[HttpRequest <$_fingerprint> ($_method $_url)]';
 	}
 
 	// ------------------------------------------------------------------------------------------
 
-	public function clone():AsyncHttpRequest {
-		return new AsyncHttpRequest({
+	public function clone():HttpRequest {
+		return new HttpRequest({
 			async : this._async,
       http11 : this._http11,
 			url : this._url,
@@ -98,7 +102,7 @@ class AsyncHttpRequest
 	}
   private function set_headers(value:HttpHeaders):HttpHeaders {
   	if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
       return _headers;
     }
     return _headers = value;
@@ -115,7 +119,7 @@ class AsyncHttpRequest
 	}
 	private function set_timeout(value:Int):Int {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.timeout] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.timeout] Can\'t modify a property when the instance is already sent');
 			return _timeout;
 		}
 		if (value<1) value = 1;
@@ -133,7 +137,7 @@ class AsyncHttpRequest
 	}
 	private function set_async(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.async] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.async] Can\'t modify a property when the instance is already sent');
 			return _async;
 		}
 		return _async = value;
@@ -150,7 +154,7 @@ class AsyncHttpRequest
 	}
 	private function set_http11(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.http11] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.http11] Can\'t modify a property when the instance is already sent');
 			return _http11;
 		}
 		return _http11 = value;
@@ -175,18 +179,18 @@ class AsyncHttpRequest
       case 'com.akifox.asynchttp.URL' | 'URL':
         v = value.clone();
       default:
-  			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
+  			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
   			return _url;
     }
 
-		#if (!js && !flash) //TODO check URL
+		#if (!js && !flash)
       if (v.relative || !v.http) {
-        AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
+        AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
       }
 		#end
 
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
 			return _url;
 		}
 		return _url = v;
@@ -204,7 +208,7 @@ class AsyncHttpRequest
 	}
 	private function set_method(value:String):String {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.method] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.method] Can\'t modify a property when the instance is already sent');
 			return _method;
 		}
 		value = HttpMethod.validate(value);
@@ -223,7 +227,7 @@ class AsyncHttpRequest
 	}
 	private function set_content(value:Dynamic):Dynamic {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.content] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.content] Can\'t modify a property when the instance is already sent');
 			return _content;
 		}
 		return _content = value;
@@ -242,7 +246,7 @@ class AsyncHttpRequest
 	}
 	private function set_contentType(value:String):String {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.contentType] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.contentType] Can\'t modify a property when the instance is already sent');
 			return _contentType;
 		}
 		// default content type
@@ -263,7 +267,7 @@ class AsyncHttpRequest
 	}
 	private function set_contentIsBinary(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.contentIsBinary] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.contentIsBinary] Can\'t modify a property when the instance is already sent');
 			return _contentIsBinary;
 		}
 		return _contentIsBinary = value;
@@ -273,14 +277,14 @@ class AsyncHttpRequest
 	* ------------------------------------------------------------------------------------------
 	* The callback function to be called when the response returns
 	*/
-	private var _callback:AsyncHttpResponse->Void=null;
-	public var callback(get,set):AsyncHttpResponse->Void;
-	private function get_callback():AsyncHttpResponse->Void {
+	private var _callback:HttpResponse->Void=null;
+	public var callback(get,set):HttpResponse->Void;
+	private function get_callback():HttpResponse->Void {
 		return _callback;
 	}
-	private function set_callback(value:AsyncHttpResponse->Void):AsyncHttpResponse->Void {
+	private function set_callback(value:HttpResponse->Void):HttpResponse->Void {
 		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.callback] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.callback] Can\'t modify a property when the instance is already sent');
 			return _callback;
 		}
 		return _callback = value;

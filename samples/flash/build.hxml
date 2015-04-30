@@ -1,0 +1,4 @@
+-main AsyncHttpExample
+-swf output/AsyncHttpExample.swf
+-swf-version 10.1
+-lib akifox-asynchttp

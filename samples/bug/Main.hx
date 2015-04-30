@@ -35,12 +35,12 @@ class Main {
 
 
 		// NOTE:
-		// An AsyncHttpRequest is mutable until sent
-		// An AsyncHttpResponse is immutable
+		// An HttpRequest is mutable until sent
+		// An HttpResponse is immutable
 
 		// This is a basic GET example that shows all the exposed variables
-		var request = new AsyncHttpRequest({url:"http://en.wikipedia.org/wiki/Wikipedia",
-								callback:function(response:AsyncHttpResponse) {
+		var request = new HttpRequest({url:"http://en.wikipedia.org/wiki/Wikipedia",
+								callback:function(response:HttpResponse) {
 									if (response.isOK) {
 										trace('DONE (HTTP STATUS ${response.status})');
 									} else {

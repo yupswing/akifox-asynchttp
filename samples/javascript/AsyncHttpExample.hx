@@ -19,9 +19,9 @@ class AsyncHttpExample {
    		// Force not throwing errors but trace (default disabled on -debug)
 		AsyncHttp.errorSafe = true;
 
-		new AsyncHttpRequest({
+		new HttpRequest({
 			url : "test.html",
-			callback : function (response:AsyncHttpResponse) {
+			callback : function (response:HttpResponse) {
 									if (response.isOK) {
 										setContent("asynchttp-text",response.content);
 									} else {
@@ -30,9 +30,9 @@ class AsyncHttpExample {
 								 }
 		}).send();
 
-		new AsyncHttpRequest({
+		new HttpRequest({
 			url : "test.xml",
-			callback : function (response:AsyncHttpResponse) {
+			callback : function (response:HttpResponse) {
 										if (response.isOK) {
 											setContent("asynchttp-xml-print",StringTools.htmlEscape(response.content));
 											setContent("asynchttp-xml-code",response.content);
@@ -42,9 +42,9 @@ class AsyncHttpExample {
 									}
 		}).send();
 
-		new AsyncHttpRequest({
+		new HttpRequest({
 			url : "test.js",
-			callback : function (response:AsyncHttpResponse) {
+			callback : function (response:HttpResponse) {
 										if (response.isOK) {
 											setContent("asynchttp-js-print",response.content);
 											setContent("asynchttp-js-code",response.content);

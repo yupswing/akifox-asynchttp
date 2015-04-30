@@ -15,11 +15,11 @@ It is the Response Class that will be passed to a request callback
 
 import haxe.Json;
 
-class AsyncHttpResponse {
+class HttpResponse {
 
 	// ==========================================================================================
 
-	public function new(request:AsyncHttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
+	public function new(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
 
 		_request = request;
 		_time = time;
@@ -52,19 +52,12 @@ class AsyncHttpResponse {
 		// determine content kind
 		_contentKind = new AsyncHttp().determineContentKind(_contentType);
 
-		// AUTOPARSE DISABLED (TODO)
-/*		if (_autoParse) {
-			if (_contentKind==ContentKind.XML) _content = toXml(); // problem on Bus Error for Neko
-			if (_contentKind==ContentKind.JSON) _content = toJson();
-			// if (_contentKind==ContentKind.IMAGE) _content = toBitmapData();
-			_autoParsed = true;
-		}*/
 	}
 
 	// ==========================================================================================
 
 	public function toString():String {
-		return '[AsyncHttpResponse <$_fingerprint> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
+		return '[HttpResponse <$_fingerprint> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
 	}
 
 	// ==========================================================================================
@@ -92,9 +85,7 @@ class AsyncHttpResponse {
 		try {
 			_contentXml = Xml.parse(toText());
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			//if (_autoParse && !_autoParsed) _isOK = false; //TODO remove
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Xml -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Xml -> $msg');
 		}
 		return _contentXml;
 	}
@@ -104,9 +95,7 @@ class AsyncHttpResponse {
 		try {
 			_contentJson = haxe.Json.parse(toText());
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			//if (_autoParse && !_autoParsed) _isOK = false; //TODO remove
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Json -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Json -> $msg');
 		}
 		return _contentJson;
 	}
@@ -116,9 +105,7 @@ class AsyncHttpResponse {
 		try {
 			_contentText = Std.string(_contentRaw);
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			// if (_autoParse && !_autoParsed) _isOK = false; //TODO remove
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Text -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Text -> $msg');
 		}
 		return _contentText;
 	}
@@ -156,9 +143,7 @@ class AsyncHttpResponse {
 			_contentBitmapData = openfl.display.BitmapData.fromBytes(bytearray);
 			#end
 		} catch( msg : Dynamic ) {
-			// if autoparse enabled and parsing error the response is set to NOT OK
-			//if (_autoParse && !_autoParsed) _isOK = false; //TODO remove
-			AsyncHttp.error('AsyncHttpResponse $_fingerprint ERROR: parse Image -> $msg');
+			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Image -> $msg');
 		}
 		return _contentBitmapData;
 	}
@@ -169,9 +154,9 @@ class AsyncHttpResponse {
 
 	private var _contentKind:ContentKind;
 
-	private var _request:AsyncHttpRequest;
-	public var request(get,never):AsyncHttpRequest;
-	private function get_request():AsyncHttpRequest {
+	private var _request:HttpRequest;
+	public var request(get,never):HttpRequest;
+	private function get_request():HttpRequest {
 		return _request;
 	}
 

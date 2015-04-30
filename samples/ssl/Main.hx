@@ -34,10 +34,10 @@ class Main {
 		// STANDARD HTTP REQUEST
 		trace('--------- HTTP REQUEST -----------');
 
-		var request = new AsyncHttpRequest({
+		var request = new HttpRequest({
 			   async : false, // force SYNCHRONOUS REQUEST to make the output more readable
-				 url : "http://en.wikipedia.org/wiki/Haxe",
-			callback : function(response:AsyncHttpResponse) {
+				   url : "http://en.wikipedia.org/wiki/Haxe",
+			callback : function(response:HttpResponse) {
 										if (response.isOK) {
 											trace('DONE (HTTP STATUS ${response.status})');
 										} else {
@@ -53,10 +53,10 @@ class Main {
 		// HTTP+SSL REQUEST
 		trace('--------- HTTPS REQUEST -----------');
 
-		var request = new AsyncHttpRequest({
+		var request = new HttpRequest({
 			   async : false, // force SYNCHRONOUS REQUEST to make the output more readable
 				   url : "https://en.wikipedia.org/wiki/Haxe",
-			callback : function(response:AsyncHttpResponse) {
+			callback : function(response:HttpResponse) {
 										if (response.isOK) {
 											trace('DONE (HTTP STATUS ${response.status})');
 										} else {
@@ -64,6 +64,7 @@ class Main {
 										}
 								 }
 			});
+			
 		request.send();
 
 

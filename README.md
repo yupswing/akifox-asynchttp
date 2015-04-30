@@ -23,7 +23,7 @@ Thanks mate!
   * [Use it in OpenFL Projects](#use-it-in-openfl-projects)
  * [Features](#features)
  * [What's new](#whats-new-040-breaking-api)
- * [Important notes](#important-notes)
+ * [Important platform notes](#important-platform-notes)
  * [Quick reference](#quick-reference)
  * [Examples](#examples)
  * [Write to a file the response](#write-to-a-file-the-response)
@@ -66,7 +66,7 @@ import com.akifox.asynchttp.*;
   - [x] Neko+CPP+Java: Socket with multi-threading
   - [x] Flash: flash.net.URLLoader
   - [x] Javascript: XmlHttpRequest
-  - [ ] Other platforms?
+  - [ ] More platforms (php, python...)? Post a [ticket](https://github.com/yupswing/akifox-asynchttp/issues) if you would like one
 - HTTP Protocol Support
   - Request methods
     - [x] Support standard methods (GET, POST)
@@ -90,6 +90,7 @@ import com.akifox.asynchttp.*;
 - Additional features
   - [x] Synchronous request option **[v0.4+]**
 - Future releases
+  - [ ] Support SSL for iOS and Android (need to make [hxssl](https://github.com/tong/hxssl) NDLLs for those platform)
   - [ ] Posting content on request (it should work but needs extensive tests)
   - [ ] Chain requests (one thread multiple requests)
   - [ ] Test socket solution on Flash target (it could be better than URLLoader)
@@ -98,26 +99,26 @@ import com.akifox.asynchttp.*;
 
 ## What's new 0.4.0 *[breaking API]*
 
-- SSL support (cpp+neko using [hxssl](https://github.com/tong/hxssl), java using standard haxe)
+- SSL support! (cpp+neko using [hxssl](https://github.com/tong/hxssl), java+js+flash using standard haxe)
 - Easier instances (options instead of arguments for *new* Request objects)
-- Better redirect handling (max 10 jumps + relative URLs support)
-- Custom headers on Request
+- Better redirect handling (default max redirection set to 10 + relative redirection URLs support)
+- Custom headers on Request (cpp+neko only)
 - Removed autoparse option
 - User-agent option
 - HTTP version option (1.0 or 1.1)
 - Synchronous/Asynchronous option
 - Request cloning (to perform a request more than once)
 
-The API change is minimal but breaking:
-Instead of making a Request object with 2 parameters
+The API change is breaking:
+Instead of making an AsyncHttpRequest object with 2 parameters
 ````haxe
 // version <= 3.x
-new AsyncHttpRequest('urlString',callbackFunction);
+new AsyncHttpRequest('urlString',function(response:AsyncHttpResponse) { ... });
 ````
-you can pass every setting as options
+you can pass *every* setting as options (new classes' names: HttpRequest and HttpResponse)
 ````haxe
 // version >= 4.x
-new AsyncHttpRequest({url:'urlString',callback:callbackFunction});
+new HttpRequest({url:'urlString',callback:function(response:HttpResponse) { ... }});
 ````
 
 Fix your code! This edit was necessary to make future improvements easier with less future API changes.
@@ -143,13 +144,21 @@ Fix your code! This edit was necessary to make future improvements easier with l
 
 ---
 
-## Important notes
+## Important platform notes
 
-**FLASH**: isBinary is always TRUE on the response object, the headers are always empty and don't rely on contentType
+**CPP/NEKO/JAVA**
+- Full support
 
-**JAVASCRIPT**: isBinary is always FALSE on the response object, the headers are always empty and don't rely on contentType
+**FLASH**:
+- *response.isBinary* is always TRUE on the response object
+- *response.headers* is always empty, so don't rely on *response.contentType*
+- you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
 
-On both platforms you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
+**JAVASCRIPT**:
+- *response.isBinary* is always FALSE on the response object
+- *response.headers* is always empty, so don't rely on *response.contentType*
+- you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
+- no support for methods PUT and DELETE
 
 ## Quick reference
 
@@ -157,9 +166,9 @@ On both platforms you have to know what you are going to fetch to parse it as yo
 
 ````haxe
 // This is a basic GET example
-var request = new AsyncHttpRequest({
+var request = new HttpRequest({
          url : "http://www.google.com",
-    callback : function(response:AsyncHttpResponse):Void {
+    callback : function(response:HttpResponse):Void {
                 if (response.isOK) {
                   trace(response.content);
                   trace('DONE (HTTP STATUS ${response.status})');
@@ -178,8 +187,8 @@ request.send();
 ````haxe
 
 // NOTE:
-// An AsyncHttpRequest is mutable until sent
-// An AsyncHttpResponse is immutable
+// An HttpRequest is mutable until sent
+// An HttpResponse is immutable
 
 // Force log to console (default enabled on -debug)
 AsyncHttp.logEnabled = true;
@@ -187,20 +196,23 @@ AsyncHttp.logEnabled = true;
 // Force not throwing errors but trace (default disabled on -debug)
 AsyncHttp.errorSafe = true;
 
-// Global custom user-agent header [v0.4+]
+// Global custom user-agent header (default "akifox-asynchttp") [v0.4+]
 AsyncHttp.userAgent = "akifox-asynchttp";
+
+// Global maximum number of redirection allowed (default 10) [v0.4+]
+AsyncHttp.maxRedirections = 10;
 
 // This is a basic GET example that shows all the exposed variables
 // NOTE: In FLASH and JAVASCRIPT cross-domain policies applies
 //		 Security errors and failed requests could happen
-var request = new AsyncHttpRequest({
+var request = new HttpRequest({
 
-  // String	 The request url "http://host:port/path?querystring"
+  // String | The request url (format is "protocol://host:port/resource?querystring")
   // NOTE: relative urls are accepted in FLASH and JAVASCRIPT
   url : "http://www.google.com",
 
   // Callback	 The function that will handle the response)
-  callback : function(response:AsyncHttpResponse):Void {
+  callback : function(response:HttpResponse):Void {
          if (response.isOK) {
            // A Good response
            // isOK == true if status is >= 200 and < 400
@@ -209,13 +221,13 @@ var request = new AsyncHttpRequest({
            var fingerprint:String = response.fingerprint;
 
            // The immutable request object relative to this response
-           var request:AsyncHttpRequest = response.request;
+           var request:HttpRequest = response.request;
 
            // Time elapsed from request start to response end
            var time:Float = response.time;
 
            // The URL fetched (after all HTTP 30x redirections)
-           // (Usually is the same as request.url)
+           // (Usually it is the same as request.url)
            var url:String = response.urlString;
 
            // The guessued filename for the URL requested
@@ -314,7 +326,7 @@ var request = new AsyncHttpRequest({
   // String  | The request content mime-type
   contentType : null // default "application/x-www-form-urlencoded"
 
-}); //end AsyncHttpRequest instance
+}); //end HttpRequest instance
 
 // String     | An unique ID to identify the request (generated)
 var fingerprint:String =  request.fingerprint;
@@ -325,6 +337,13 @@ var fingerprint:String =  request.fingerprint;
 request.timeout = 20; // example to set the timeout to 20 seconds
 
 request.send(); // start the request as set
+
+// If you want to send the request again you have to clone it
+// It will get a new fingerprint and you can change all its properties
+// (This is because once a request is sent it gets finalised and it becomes immutable)
+var newRequest = request.clone();
+newRequest.timeout = 10; //change a property example
+newRequest.send();
 
 ````
 
@@ -338,12 +357,22 @@ The example shows how to handle multiple requests and responses
 ### Interactive example
 [Check it out](/samples/interactive/)
 
-The example allow the user to try any URL to see the behaviour of the library with redirects, errors and his own urls.
+The example allow the user to try any URL to see the behavior of the library with redirects, errors and his own urls.
+
+### SSL example
+[Check it out](/samples/ssl/)
+
+The example shows the seamless SSL support (the only difference between HTTP and HTTPS is in the URL).
 
 ### Javascript example
 [Check it out](/samples/javascript/)
 
-A simple example in javascript that shows
+A simple example in javascript that shows how to use the library.
+
+### Flash example
+[Check it out](/samples/flash/)
+
+A simple example in flash that shows how to use the library.
 
 ### OpenFL Image URL to Stage (Bitmap) example
 [Check it out](/samples/openfl/)
