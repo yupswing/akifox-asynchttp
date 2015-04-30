@@ -62,6 +62,8 @@ import com.akifox.asynchttp.*;
     - [x] Support fixed content-length transfer mode (HTTP/1.x)
     - [x] Support chunked transfer mode (HTTP/1.1)
   - [x] Support redirect (Status 301,302,303,307)
+    - [x] Support relative urls
+    - [x] Handle infinite loops + too many redirects (max: 10)
 - Features
   - [x] HTTPS seamless support (with SSL Socket) **[introduced in 4.0]**
   - [x] Synchronous requests **[introduced in 4.0]**
@@ -84,18 +86,18 @@ import com.akifox.asynchttp.*;
 - Request cloning
 - Easier instances (options instead of arguments for *new*)
 - Custom headers on Request
-- Better redirect handling
+- Better redirect handling (max 10 jumps + relative URLs support)
 
 The API change is minimal but breaking:
 Instead of making a Request object with 2 parameters
 ````haxe
 // version <= 3.x
-new AsyncHttpRequest('urlstring',callbackFunction);
+new AsyncHttpRequest('urlString',callbackFunction);
 ````
 you can pass every setting as options
 ````haxe
 // version >= 4.x
-new AsyncHttpRequest({url:'urlstring',callback:callbackFunction});
+new AsyncHttpRequest({url:'urlString',callback:callbackFunction});
 ````
 
 Fix your code! This edit was necessary to make future improvements easier with no breaking api.
@@ -193,7 +195,7 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 		var url = "http://www.google.com";
 		var request = new AsyncHttpRequest(
 						// String	 The request url "http://host:port/path?querystring"
-						// NOTE: relative urls are accepted in FLASH and JAVSCRIPT
+						// NOTE: relative urls are accepted in FLASH and JAVASCRIPT
 						url,
 					    // Callback	 The function that will handle the response)
 					    function(response:AsyncHttpResponse):Void {
@@ -279,10 +281,10 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 		// An unique ID to identify the request
 		var fingerprint:String = request.fingerprint;
 
-		// AsyncHttpMethod | The request http method
+		// HttpMethod | The request http method
 		// Values are GET (default), POST, PUT or DELETE
 		// NOTE: Only GET and POST in Javascript
-		request.method = AsyncHttpMethod.GET;
+		request.method = com.akifox.asynchttp.HttpMethod.GET;
 
 		// Int     | Request timeout in seconds (default 10 seconds)
 		request.timeout = 10;

@@ -91,12 +91,11 @@ typedef AsyncHttpHeaders = Map<String,String>;
 		var status:Int;
 		var headers:AsyncHttpHeaders;
 		var socket:AbstractSocket;
-		var ssl:Bool;
 	}
 
 #end
 
-enum AsyncHttpTransferMode {
+enum HttpTransferMode {
   UNDEFINED;
   FIXED;
   CHUNKED;
@@ -130,6 +129,8 @@ class AsyncHttp
 	#end
 	public static inline var DEFAULT_FILENAME = "untitled";
 
+	public static inline var MAX_REDIRECTION:Int = 10; // 10 jumps allowed
+
 	private static var _contentKindMatch:Array<ContentKindMatch> = [
 		{kind:ContentKind.IMAGE,regex:~/^image\/(jpe?g|png|gif)/i},
 		{kind:ContentKind.XML,regex:~/(application\/xml|text\/xml|\+xml)/i},
@@ -154,7 +155,6 @@ class AsyncHttp
 
 	// ==========================================================================================
 
-	public var REGEX_URL = ~/^(https?):\/\/([^\/\?:]+)(:\d+|)(\/[^\?]*|)(\?.*|)/;
 	public var REGEX_FILENAME = ~/([^?\/]*)($|\?.*)/;
 
 	// ==========================================================================================
@@ -216,11 +216,12 @@ class AsyncHttp
 
 		#if (neko || cpp || java)
 
-			// Multithread version (only Neko, CPP and JAVA) HTTP protocol
 			if (request.async) {
+				// Asynchronous (with a new thread)
 				var worker = Thread.create(socketThread);
 				worker.sendMessage(request);
 			} else {
+				// Synchronous (same thread)
 				useSocket(request);
 			}
 
@@ -231,6 +232,7 @@ class AsyncHttp
 
 		#elseif js
 
+			// Standard Haxe HTTP
 			useHaxeHttp(request);
 
 		#else
@@ -249,27 +251,13 @@ class AsyncHttp
 
 	// Open a socket, send a request and get the headers
 	// (could be called more than once in case of redirects)
-	private function useSocketRequest(url:String,request:AsyncHttpRequest):Requester {
+	private function useSocketRequest(url:URL,request:AsyncHttpRequest):Requester {
 
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
-		var rx = REGEX_URL; // decode url ($HTTPS://$HOST:$PORT/$PATH?$DATA)
-		rx.match(url);
-		var ssl:Bool = (rx.matched(1)=="https");
-		var host = rx.matched(2);
-		var port = rx.matched(3);
-		if (port=="") {
-			if (ssl) port = "443"; // default HTTPS port
-			else port = "80"; // default HTTP port
-		}
-		else port = port.substr(1); //removes ":"
-		var path = rx.matched(4);
-		if (path=="") path = "/";
-		var querystring = rx.matched(5);
-
 		var s:AbstractSocket;
-		if (ssl) {
+		if (url.ssl) {
 			s = new SocketSSL();
 			#if (!php && !java && !hxssl)
 			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n
@@ -283,12 +271,12 @@ class AsyncHttp
 		// -- START REQUEST
 
 		var connected = false;
-		log('${request.fingerprint} INFO: Request\n> ${request.method} $host:$port$path$querystring');
+		log('${request.fingerprint} INFO: Request\n> ${request.method} ${url}');
 		try {
 			#if flash
-			s.connect(host, Std.parseInt(port));
+			s.connect(url.host, url.port);
 			#else
-			s.connect(new Host(host), Std.parseInt(port));
+			s.connect(new Host(url.host), url.port);
 			#end
 			connected = true;
 		} catch (msg:Dynamic) {
@@ -299,12 +287,12 @@ class AsyncHttp
 		if (connected) {
 
 			try {
-				s.output.writeString('${request.method} $path$querystring HTTP/1.1\r\n');
-				log('${request.fingerprint} HTTP > ${request.method} $path$querystring HTTP/1.1');
+				s.output.writeString('${request.method} ${url.resource}${url.querystring} HTTP/1.1\r\n');
+				log('${request.fingerprint} HTTP > ${request.method} ${url.resource}${url.querystring} HTTP/1.1');
 				s.output.writeString('User-Agent: '+USER_AGENT+'\r\n');
 				log('${request.fingerprint} HTTP > User-Agent: akifox-asynchttp');
-				s.output.writeString('Host: $host\r\n');
-				log('${request.fingerprint} HTTP > Host: $host');
+				s.output.writeString('Host: ${url.host}\r\n');
+				log('${request.fingerprint} HTTP > Host: ${url.host}');
 				if (request.content!=null) {
 					s.output.writeString('Content-Type: ${request.contentType}\r\n');
 					log('${request.fingerprint} HTTP > Content-Type: ${request.contentType}');
@@ -361,7 +349,7 @@ class AsyncHttp
 		  // -- END RESPONSE HEADERS
 		}
 
-		return {status:status,socket:s,ssl:ssl,headers:headers};
+		return {status:status,socket:s,headers:headers};
 	}
 
 	private function socketThread() {
@@ -379,26 +367,27 @@ class AsyncHttp
 		var start = Timer.stamp();
 
 		// RESPONSE
-		var url:String=request.url; //the response url
+		var url:URL=request.url;
 		var content:Dynamic=null;
 		var contentType:String=null;
 		var contentLength:Int=0;
 		var contentIsBinary:Bool=false;
-		var filename:String = determineFilename(request.url);
+		var filename:String = determineFilename(request.url.toString());
 
 		var connected:Bool = false;
 		var redirect:Bool = false;
 
 		var s:AbstractSocket;
-		var ssl:Bool = false;
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
+		// redirects url list to avoid loops
+		var redirectChain = new Array<String>();
+		redirectChain.push(url.toString());
 
 		do {
 			var req:Requester = useSocketRequest(url,request);
 			status = req.status;
-			ssl = req.ssl;
 			s = req.socket;
 			headers = req.headers;
 			req = null;
@@ -412,14 +401,26 @@ class AsyncHttp
 			  	if (redirect) {
 			  		var newlocation = headers['location'];
 			  		if (newlocation != "") {
-			  			if (url!=newlocation) {
-			  				url = newlocation;
-							log('${request.fingerprint} REDIRECT: $status -> ${url}');
-							s.close();
-							s = null;
+							var newURL = new URL(newlocation);
+							newURL.merge(url);
+			  			if (redirectChain.length<=MAX_REDIRECTION && redirectChain.indexOf(newURL.toString())==-1) {
+								url = newURL;
+								redirectChain.push(url.toString());
+								log('${request.fingerprint} REDIRECT: $status -> ${url}');
+								s.close();
+								s = null;
 			  			} else {
-			  				// redirect to same url
+			  				// redirect loop
 			  				redirect = false;
+								s.close();
+								s = null;
+								connected = false;
+								if (redirectChain.length>MAX_REDIRECTION) {
+									error('${request.fingerprint} ERROR: Too many redirection (Max $MAX_REDIRECTION)\n'+redirectChain.join('-->'));
+								} else {
+									error('${request.fingerprint} ERROR: Redirection loop\n'+redirectChain.join('-->')+'-->'+redirectChain[0]);
+								}
+
 			  			}
 			  		}
 			    }
@@ -437,16 +438,16 @@ class AsyncHttp
 			contentIsBinary = determineBinary(contentKind);
 
 			// determine transfer mode
-			var mode:AsyncHttpTransferMode = AsyncHttpTransferMode.UNDEFINED;
-			if (contentLength>0) mode = AsyncHttpTransferMode.FIXED;
-			if (headers['transfer-encoding'] == 'chunked') mode = AsyncHttpTransferMode.CHUNKED;
+			var mode:HttpTransferMode = HttpTransferMode.UNDEFINED;
+			if (contentLength>0) mode = HttpTransferMode.FIXED;
+			if (headers['transfer-encoding'] == 'chunked') mode = HttpTransferMode.CHUNKED;
 			log('${request.fingerprint} TRANSFER MODE: $mode');
 
 			var bytes_loaded:Int = 0;
 			var contentBytes:Bytes=null;
 
 			switch(mode) {
-				case AsyncHttpTransferMode.UNDEFINED:
+				case HttpTransferMode.UNDEFINED:
 
 					// UNKNOWN CONTENT LENGTH
 
@@ -460,7 +461,7 @@ class AsyncHttp
 					contentLength = contentBytes.length;
 				  log('${request.fingerprint} LOADED: $contentLength/$contentLength bytes (100%)');
 
-				case AsyncHttpTransferMode.FIXED:
+				case HttpTransferMode.FIXED:
 
 					// KNOWN CONTENT LENGTH
 
@@ -487,7 +488,7 @@ class AsyncHttp
 			      log('${request.fingerprint} LOADED: $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)');
 			    }
 
-				case AsyncHttpTransferMode.CHUNKED:
+				case HttpTransferMode.CHUNKED:
 
 					// CHUNKED MODE
 
@@ -566,7 +567,7 @@ class AsyncHttp
 		var start = Timer.stamp();
 
 		// RESPONSE FIELDS
-		var url:String = request.url;
+		var url:URL = request.url;
 		var status:Int = 0;
 		var headers = new AsyncHttpHeaders();
 		var content:Dynamic = null;
@@ -574,14 +575,14 @@ class AsyncHttp
 		var contentType:String = DEFAULT_CONTENT_TYPE;
 		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));;
 
-		var filename:String = determineFilename(request.url);
+		var filename:String = determineFilename(request.url.toString());
 		urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 
 		log('${request.fingerprint} INFO: Request\n> ${request.method} ${request.url}');
 
-		var urlRequest = new URLRequest(request.url);
+		var urlRequest = new URLRequest(request.url.toString());
 		urlRequest.method = request.method;
-		if (request.content!=null && request.method != AsyncHttpMethod.GET) {
+		if (request.content!=null && request.method != HttpMethod.GET) {
 			urlRequest.data = request.content;
 			urlRequest.contentType = request.contentType;
 			//urlRequest.dataFormat = (request.contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
@@ -593,21 +594,22 @@ class AsyncHttp
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Status $status');
 			//content = null; // content will be retrive in EVENT.COMPLETE
-			filename = determineFilename(url);
+			filename = determineFilename(url.toString());
 			urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 			httpstatusDone = true; //flash does not call this event
 		});
 
 		urlLoader.addEventListener("httpResponseStatus", function(e:HTTPStatusEvent) {
-			url = e.responseURL;
-			if (url==null) url = request.url;
+			var newUrl = new URL(e.responseURL);
+			newURL.merge(request.url);
+			url = newURL;
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Response_Status $status');
 			try { headers = convertHeaders(e.responseHeaders); }
 			//content = null; // content will be retrive in EVENT.COMPLETE
 			contentType = determineContentType(headers);
 			contentIsBinary = determineBinary(determineContentKind(contentType));
-			filename = determineFilename(url);
+			filename = determineFilename(url.toString());
 
 			urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 			httpstatusDone = true; //flash does not call this event
@@ -622,7 +624,7 @@ class AsyncHttp
 		    urlLoader = null;
 		});
 
-		urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent) {
+		urlLoader.addEventListener(SecurityErrorEvent.SECurity_ERROR, function(e:SecurityErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = 0;
 		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
@@ -660,7 +662,7 @@ class AsyncHttp
 			var start = Timer.stamp();
 
 			// RESPONSE FIELDS
-			var url:String = request.url;
+			var url:URL = request.url;
 			var status:Int = 0;
 			var headers = new AsyncHttpHeaders();
 			var content:Dynamic = null;
@@ -668,9 +670,10 @@ class AsyncHttp
 			var contentType:String = DEFAULT_CONTENT_TYPE;
 			var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
 
-			var filename:String = determineFilename(request.url);
+			var filename:String = determineFilename(url.toString());
 
-			var r = new haxe.Http(request.url);
+			var r = new haxe.Http(url.toString());
+			trace(url.toString());
 			r.async = true; //default
 			//r.setHeader("User-Agent",USER_AGENT); //give warning in Chrome
 			if (request.content!=null) {

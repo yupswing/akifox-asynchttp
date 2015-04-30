@@ -19,7 +19,7 @@ class AsyncHttpResponse {
 
 	// ==========================================================================================
 
-	public function new(request:AsyncHttpRequest,time:Float,url:String,headers:AsyncHttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
+	public function new(request:AsyncHttpRequest,time:Float,url:URL,headers:AsyncHttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
 
 		_request = request;
 		_time = time;
@@ -177,9 +177,9 @@ class AsyncHttpResponse {
 		return _request.fingerprint;
 	}
 
-	private var _url:String;
-	public var url(get,never):String;
-	private function get_url():String {
+	private var _url:URL;
+	public var url(get,never):URL;
+	private function get_url():URL {
 		return _url;
 	}
 

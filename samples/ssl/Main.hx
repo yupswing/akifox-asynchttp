@@ -36,7 +36,7 @@ class Main {
 
 		var request = new AsyncHttpRequest({
 			   async : false, // force SYNCHRONOUS REQUEST to make the output more readable
-				   url : "http://en.wikipedia.org/wiki/Haxe",
+				 url : "http://en.wikipedia.org/wiki/Haxe",
 			callback : function(response:AsyncHttpResponse) {
 										if (response.isOK) {
 											trace('DONE (HTTP STATUS ${response.status})');

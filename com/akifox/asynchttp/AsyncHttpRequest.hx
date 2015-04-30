@@ -11,7 +11,7 @@ import com.akifox.asynchttp.AsyncHttp;
 typedef AsyncHttpRequestOptions = {
 		//? fingerprint : String,
     ? async: Bool,
-    ? url: String,
+    ? url: Dynamic,
     ? callback: AsyncHttpResponse->Void,
 		? headers : AsyncHttpHeaders,
 		? timeout : Int,
@@ -134,32 +134,46 @@ class AsyncHttpRequest
 
   /*
 	* ------------------------------------------------------------------------------------------
-	* The HTTP URL
+	* The URL
 	* complete format: http://host:port/path?querystring
 	*/
-	private var _url:String;
-	public var url(get,set):String;
-	private function get_url():String {
+	private var _url:URL = null;
+	public var url(get,set):URL;
+	private function get_url():URL {
 		return _url;
 	}
-	private function set_url(value:String):String {
-		#if (!js && !flash)
-		if (!new AsyncHttp().REGEX_URL.match(value))
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: Not a valid url "$value"');
+	private function set_url(value:Dynamic):URL {
+
+    var v:URL = null;
+    switch(Type.getClassName(Type.getClass(value))) {
+      case 'String':
+        v = new URL(value);
+      case 'URL':
+        v = value.clone();
+      default:
+  			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
+  			return _url;
+    }
+
+		#if (!js && !flash) //TODO check URL
+      if (v.relative || !v.http) {
+        AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
+      }
 		#end
+
 		if (_finalised) {
 			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
 			return _url;
 		}
-		return _url = value;
+		return _url = v;
 	}
 
    /*
 	* ------------------------------------------------------------------------------------------
 	* The HTTP Method
-	* accepted values AsyncHttpMethod.GET, .POST, .PUT, .DELETE
+	* accepted values HttpMethod.GET, .POST, .PUT, .DELETE
 	*/
-	private var _method:String=AsyncHttpMethod.DEFAULT_METHOD;
+	private var _method:String=HttpMethod.DEFAULT_METHOD;
 	public var method(get,set):String;
 	private function get_method():String {
 		return _method;
@@ -169,7 +183,7 @@ class AsyncHttpRequest
 			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.method] Can\'t modify a property when the instance is already sent');
 			return _method;
 		}
-		value = AsyncHttpMethod.validate(value);
+		value = HttpMethod.validate(value);
 		return _method = value;
 	}
 
