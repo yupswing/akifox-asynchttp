@@ -39,21 +39,19 @@ class Main {
 		// An AsyncHttpResponse is immutable
 
 		// This is a basic GET example that shows all the exposed variables
-		var request = new AsyncHttpRequest("http://en.wikipedia.org/wiki/Wikipedia",
-								function(response:AsyncHttpResponse) {
+		var request = new AsyncHttpRequest({url:"http://en.wikipedia.org/wiki/Wikipedia",
+								callback:function(response:AsyncHttpResponse) {
 									if (response.isOK) {
 										trace('DONE (HTTP STATUS ${response.status})');
 									} else {
 										trace('ERROR (HTTP STATUS ${response.status})');
 									}
 								}
-					      );
+							});
 		//request.timeout = 2;
-		request.autoParse = false; // set autoParse to false (it is already the default)
 		request.send();
-		//request.autoParse = false; // can't modify a property after sending! (it will throw an error)
 
 
 		// --------------------------------------------------------------------------------------------------
-}
+	}
 }
