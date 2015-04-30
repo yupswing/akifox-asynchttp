@@ -6,7 +6,7 @@ package com.akifox.asynchttp;
 
 @licence MIT Licence
 
-@version 0.3.1
+@version 0.4.0
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
 #### Asyncronous HTTP Request HAXE Library
@@ -53,6 +53,13 @@ typedef AsyncHttpHeaders = Map<String,String>;
 	#elseif cpp
 		typedef Thread = cpp.vm.Thread;
 		typedef Lib = cpp.Lib;
+	#end
+
+	#if hxssl
+	// SSL Library
+	typedef SocketSSL = sys.ssl.Socket;
+	#else
+	typedef SocketSSL = sys.net.Socket;
 	#end
 
 	typedef Socket = sys.net.Socket;
@@ -116,7 +123,7 @@ class AsyncHttp
 
 	public static inline function error(message:String) {
 		if (AsyncHttp.errorSafe) {
-			log(message);
+			trace(message);
 		} else {
 			throw message;
 		}
@@ -124,8 +131,7 @@ class AsyncHttp
 
 	// ==========================================================================================
 
-	public var REGEX_HTTP = ~/^http:/;
-	public var REGEX_URL = ~/^https?:\/\/([^\/\?:]+)(:\d+|)(\/[^\?]*|)(\?.*|)/;
+	public var REGEX_URL = ~/^(https?):\/\/([^\/\?:]+)(:\d+|)(\/[^\?]*|)(\?.*|)/;
 	public var REGEX_FILENAME = ~/([^?\/]*)($|\?.*)/;
 
 	// ==========================================================================================
@@ -183,23 +189,17 @@ class AsyncHttp
 
 	public function send(request:AsyncHttpRequest) {
 
-		request.finalize(); // request will not change
+		request.finalise(); // request will not change
 
 		#if (neko || cpp || java)
 
-			if (REGEX_HTTP.match(request.url)) {
-
-				// Multithread version (only Neko, CPP and JAVA) HTTP protocol
-				var worker = Thread.create(useSocket);
-				worker.sendMessage(request);
-
-				//useSocket(request); //REQUEST WITHOUT THREAD (TESTING PURPOSES)
-
-			} else {
-
-			  	error('${request.fingerprint} ERROR: Only HTTP Protocol supported -> ${request.url}');
-
-			}
+			// Multithread version (only Neko, CPP and JAVA) HTTP protocol
+			// if (request.async) {
+			// 	var worker = Thread.create(socketThread);
+			// 	worker.sendMessage(request);
+			// } else {
+				useSocket(request);
+			//}
 
 		#elseif flash
 
@@ -212,7 +212,7 @@ class AsyncHttp
 
 		#else
 
-		  	error('ERROR: Platform not supported');
+		  error('ERROR: Platform not supported');
 
 		#end
 
@@ -228,20 +228,30 @@ class AsyncHttp
 	// (could be called more than once in case of redirects)
 	private function useSocketRequest(url:String,request:AsyncHttpRequest):Requester {
 
-		var s = new Socket();
-		s.setTimeout(request.timeout);
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
-		var rx = REGEX_URL; // decode url (HTTP://$HOST:$PORT/$PATH?$DATA)
+		var rx = REGEX_URL; // decode url ($HTTPS://$HOST:$PORT/$PATH?$DATA)
 		rx.match(url);
-		var host = rx.matched(1);
-		var port = rx.matched(2);
+		var ssl:Bool = (rx.matched(1)=="https");
+		var host = rx.matched(2);
+		var port = rx.matched(3);
 		if (port=="") port = "80";
 		else port = port.substr(1); //removes ":"
-		var path = rx.matched(3);
+		var path = rx.matched(4);
 		if (path=="") path = "/";
-		var querystring = rx.matched(4);
+		var querystring = rx.matched(5);
+
+		var s:Socket;
+		if (!ssl) {
+			s = cast(new Socket(),Socket);
+		} else {
+			s = cast(new SocketSSL(),SocketSSL);
+			#if !hxssl
+			error('${request.fingerprint} ERROR: requested HTTPS url but hxssl library not installed (fallback on HTTP socket)');
+			#end
+		}
+		s.setTimeout(request.timeout);
 
 		// -- START REQUEST
 
@@ -318,11 +328,16 @@ class AsyncHttp
 		return {status:status,socket:s,headers:headers};
 	}
 
+	private function socketThread() {
+		var request:AsyncHttpRequest = Thread.readMessage(true);
+		useSocket(request);
+	}
+
 	// Ask useSocketRequest to open a socket and send the request
 	// then parse the response and handle it to the callback
-	private function useSocket()
+	private function useSocket(request:AsyncHttpRequest)
 	{
-		var request:AsyncHttpRequest = Thread.readMessage(true);
+		//var request:AsyncHttpRequest = Thread.readMessage(true);
 		if (request==null) return;
 
 		var start = Timer.stamp();
@@ -338,7 +353,7 @@ class AsyncHttp
 		var connected:Bool = false;
 		var redirect:Bool = false;
 
-		var s:sys.net.Socket;
+		var s:Socket;
 		var headers = new AsyncHttpHeaders();
 		var status:Int = 0;
 
@@ -487,7 +502,7 @@ class AsyncHttp
 
 		log('${request.fingerprint} INFO: Response $status ($contentLength bytes in $time s)\n> ${request.method} $url');
 		if (request.callback!=null)
-		    request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
   	}
 
   	#elseif flash
@@ -565,7 +580,7 @@ class AsyncHttp
 		    status = e.errorID;
 		    error('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
@@ -574,7 +589,7 @@ class AsyncHttp
 		    status = 0;
 		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
@@ -585,7 +600,7 @@ class AsyncHttp
 		    content = Bytes.ofString(e.target.data);
 		    log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		});
 
@@ -595,7 +610,7 @@ class AsyncHttp
 		    var time = elapsedTime(start);
 		    error('${request.fingerprint} ERROR: Request failed -> $msg');
 		    if (request.callback!=null)
-		    	request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    	request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 		    urlLoader = null;
 		}
 	}
@@ -630,7 +645,7 @@ class AsyncHttp
 		    	error('${request.fingerprint} ERROR: Request failed -> $msg');
 		    	var time = elapsedTime(start);
 		    	if (request.callback!=null)
-		    		request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    		request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 			};
 
 			r.onData = function(data:String) {
@@ -639,7 +654,7 @@ class AsyncHttp
 		    	content = data;
 		    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
 		    	if (request.callback!=null)
-		    		request.callback(new AsyncHttpResponse(request.fingerprint,time,url,headers,status,content,contentIsBinary,filename,request.autoParse));
+		    		request.callback(new AsyncHttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
 			};
 
 			r.onStatus = function(http_status:Int) {

@@ -21,14 +21,14 @@ class Main {
 			while (true) {
 				var input = Sys.stdin().readLine();
 				if (input=="") break;
-				new AsyncHttpRequest(input,onResponse).send();
+				new AsyncHttpRequest({url:input,callback:onResponse}).send();
 			}
 
 		trace('>> Goodbye!');
 
 #else
 
-		new AsyncHttpRequest("http://wikipedia.com/wiki/wikipedia",onResponse).send();
+		new AsyncHttpRequest({url:"http://wikipedia.com/wiki/wikipedia",callback:onResponse}).send();
 
 #end
 

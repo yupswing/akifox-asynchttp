@@ -1,4 +1,5 @@
 package com.akifox.asynchttp;
+import com.akifox.asynchttp.AsyncHttp;
 
 /**
 
@@ -7,16 +8,39 @@ package com.akifox.asynchttp;
 @licence MIT Licence
 **/
 
+typedef AsyncHttpRequestOptions = {
+		//? fingerprint : String,
+    ? async: Bool,
+    ? url: String,
+    ? callback: AsyncHttpResponse->Void,
+		? headers : AsyncHttpHeaders,
+		? timeout : Int,
+		? method: String,
+		? content: Dynamic,
+		? contentType: String,
+		? contentIsBinary: Bool
+}
+
 class AsyncHttpRequest
 {
 	private var _finalised:Bool = false; //it was .sent at least once (no edit allowed)
 
 	// ==========================================================================================
 
-	public function new(?url:String="",?callback:AsyncHttpResponse->Void=null) {
+	public function new(?options:AsyncHttpRequestOptions=null) {
 		_fingerprint = new AsyncHttp().randomUID(8);
-		this.url = url;
-		this.callback = callback;
+
+		if(options != null) {
+			if(options.async != null)						async = options.async;
+			if(options.url != null)							url = options.url;
+			if(options.callback != null)				callback = options.callback;
+			if(options.headers != null)					_headers = options.headers;
+			if(options.timeout != null)					timeout = options.timeout;
+			if(options.method != null)					method = options.method;
+			if(options.content != null)					content = options.content;
+			if(options.contentType != null)			contentType = options.contentType;
+			if(options.contentIsBinary != null)	contentIsBinary = options.contentIsBinary;
+		}
 	}
 
 	public function toString():String {
@@ -25,11 +49,25 @@ class AsyncHttpRequest
 
 	// ------------------------------------------------------------------------------------------
 
+	public function clone():AsyncHttpRequest {
+		return new AsyncHttpRequest({
+			async : this._async,
+			url : this._url,
+			callback : this._callback,
+			headers : this._headers,
+			timeout : this._timeout,
+			method : this._method,
+			content : this._content,
+			contentType : this._contentType,
+			contentIsBinary : this._contentIsBinary
+		});
+	}
+
 	public function send() {
 		new AsyncHttp().send(this);
 	}
 
-	public function finalize() {
+	public function finalise() {
 		_finalised = true; // it will not change
 	}
 
@@ -43,6 +81,20 @@ class AsyncHttpRequest
 	public var fingerprint(get,never):String;
 	private function get_fingerprint():String {
 		return _fingerprint;
+	}
+
+  /*
+	* ------------------------------------------------------------------------------------------
+	* Request headers
+	*/
+	private var _headers:AsyncHttpHeaders;
+	public var headers(get,never):AsyncHttpHeaders;
+	private function get_headers():AsyncHttpHeaders {
+		return _headers;
+	}
+	public function addHeader(header:String,value:String):AsyncHttpRequest {
+		_headers[header] = value;
+		return this;
 	}
 
    /*
@@ -59,7 +111,25 @@ class AsyncHttpRequest
 			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.timeout] Can\'t modify a property when the instance is already sent');
 			return _timeout;
 		}
+		if (value<1) value = 1;
 		return _timeout = value;
+	}
+
+  /*
+	* ------------------------------------------------------------------------------------------
+	* Asynchronous
+	*/
+	private var _async:Bool=true;
+	public var async(get,set):Bool;
+	private function get_async():Bool {
+		return _async;
+	}
+	private function set_async(value:Bool):Bool {
+		if (_finalised) {
+			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.async] Can\'t modify a property when the instance is already sent');
+			return _async;
+		}
+		return _async = value;
 	}
 
   /*
@@ -176,23 +246,6 @@ class AsyncHttpRequest
 			return _callback;
 		}
 		return _callback = value;
-	}
-
-   /*
-	* ------------------------------------------------------------------------------------------
-	* The response will be parsed and the content will be an Object (Json => Anon Structure, XML => Class Xml)
-	*/
-	private var _autoParse:Bool=false;
-	public var autoParse(get,set):Bool;
-	private function get_autoParse():Bool {
-		return _autoParse;
-	}
-	private function set_autoParse(value:Bool):Bool {
-		if (_finalised) {
-			AsyncHttp.error('AsyncHttpRequest $_fingerprint ERROR: [.autoParse] Can\'t modify a property when the instance is already sent');
-			return _autoParse;
-		}
-		return _autoParse = value;
 	}
 
 }

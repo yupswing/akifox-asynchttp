@@ -4,8 +4,8 @@
   "license": "MIT",
   "tags": ["cross","flash","cpp","neko","java","js","http","request","response","asynchronous"],
   "description": "Haxe multi-platform Asynchronous HTTP Requests",
-  "version": "0.3.1",
-  "releasenote": "Handling connection errors and timeouts",
+  "version": "0.4.0",
+  "releasenote": "API revision + Custom headers on request + SSL support",
   "contributors": ["yupswing"],
   "dependencies": {}
 }

@@ -1,9 +1,9 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.3.1-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.0-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.3.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.3.2-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
@@ -63,17 +63,30 @@ import com.akifox.asynchttp.*;
     - [x] Support chunked transfer mode (HTTP/1.1)
   - [x] Support redirect (Status 301,302,303,307)
 - Parsing
-  - [ ] Parsing based on content-type (autoParse option, default false) [disabled]
+  - [ ] **[4.0]** Parsing based on content-type (autoParse option, default false) [disabled]
   - [x] Json to Anonymous Structure
   - [x] XML to Xml object
   - [x] Image (Png,Jpeg, Gif) to BitmapData object (only with OpenFL support)
 - Todo
   - [ ] Manage multiple requests in a single thread (to compact)
-  - [ ] HTTPS support (with SSL Socket)
-  - [ ] Test socket solution on Flash target
-  - [ ] Avoid redirect looping between urls (keep a list and check if one is recurring)
+  - [ ] **[4.0]** HTTPS support (with SSL Socket)
+  - [ ] **[4.0]** Test socket solution on Flash target
+  - [ ] **[4.0]** Avoid redirect looping between urls (keep a list and check if one is recurring)
 
 ---
+
+## What's new 0.4.0 [breaking API]
+
+- Removed autoparse option
+- Easier instances (options instead of arguments for *new*)
+- SSL support (cpp+neko) using [hxssl](https://github.com/tong/hxssl)
+- Custom headers on Request
+- Better redirect handling
+
+## What's new 0.3.1 (fixed issue #1)
+
+- Timeout option (request)
+- Handling unexpected connection termination
 
 ## What's new (0.2 to 0.3) [breaking API]
 
@@ -84,11 +97,6 @@ import com.akifox.asynchttp.*;
 - The library is now thread-safe (major problems in 0.2)
 - Support for redirection (HTTP STATUS 30x)
 - Using sockets make requests around 50% faster than OpenFL URLLoader
-
-## What's new 0.3.1 (fixed issue #1)
-
-- Timeout option (request)
-- Handling unexpected connection termination
 
 ---
 
@@ -175,7 +183,6 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 					   		if (response.isOK) {
 					   			// A Good response
 					   			// isOK == true if status is >= 200 and < 400
-					   			// if autoParse is enabled and parsing fails, isOK will be false
 
 					   			// An unique ID that match the request.fingerprint
 					   			var fingerprint:String = response.fingerprint;
@@ -244,10 +251,6 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 					   			//		[Xml Object] (returns null on error)
 					   			var contentXml:Xml = response.toXml();
 
-					   			// Tells if autoParse was enabled
-					   			// NOTE: Always disabled (in development)
-					   			var autoParse:Bool = response.autoParse;
-
 					   			trace('DONE (HTTP STATUS ${response.status})');
 					   		} else {
 					   			// Any connection or status error
@@ -272,12 +275,6 @@ NOTE: This example works only with OpenFL because it supports decoding of images
 
 		// String  | The request content mime-type
 		request.contentType = null; // default "application/x-www-form-urlencoded"
-
-		// Bool    | The response content will be elaborated
-		//	       | XML response will be converted to an Xml Object
-		//		   | JSON response will be converted to an Anonymous Structure
-		//		   | IMAGE response will be converted to a BitmapData Object
-		request.autoParse = false; // defaul false
 
 		request.send();
 
