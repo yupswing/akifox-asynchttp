@@ -673,7 +673,6 @@ class AsyncHttp
 			var filename:String = determineFilename(url.toString());
 
 			var r = new haxe.Http(url.toString());
-			trace(url.toString());
 			r.async = true; //default
 			//r.setHeader("User-Agent",USER_AGENT); //give warning in Chrome
 			if (request.content!=null) {

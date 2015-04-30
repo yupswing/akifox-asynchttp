@@ -61,20 +61,21 @@ import com.akifox.asynchttp.*;
     - [x] Support unknown transfer mode (HTTP/1.x)
     - [x] Support fixed content-length transfer mode (HTTP/1.x)
     - [x] Support chunked transfer mode (HTTP/1.1)
-  - [x] Support redirect (Status 301,302,303,307)
-    - [x] Support relative urls
-    - [x] Handle infinite loops + too many redirects (max: 10)
-- Features
-  - [x] HTTPS seamless support (with SSL Socket) **[introduced in 4.0]**
+  - Redirects
+    - [x] Support redirect (Status 301,302,303,307)
+    - [x] Support relative urls **[introduced in 4.0]**
+    - [x] Block 'infinite loops' + 'too many redirects (max: 10)' **[introduced in 4.0]**
+  - [x] HTTP over SSL (HTTPS) support **[introduced in 4.0]**
+- Additional features
   - [x] Synchronous requests **[introduced in 4.0]**
 - Parsing
   - [x] Json to Anonymous Structure
   - [x] XML to Xml object
   - [x] Image (Png,Jpeg, Gif) to BitmapData object (only with OpenFL support)
 - Todo
+  - [ ] Custom headers on request
   - [ ] Manage multiple requests in a single thread (to compact)
-  - [ ] Test socket solution on Flash target **[4.0]**
-  - [ ] Avoid redirect looping between urls (keep a list and check if one is recurring) **[4.0]**
+  - [ ] Test socket solution on Flash target
 
 ---
 
@@ -82,7 +83,7 @@ import com.akifox.asynchttp.*;
 
 - SSL support (cpp+neko using [hxssl](https://github.com/tong/hxssl), java using standard haxe)
 - Removed autoparse option
-- Synchronous options on every request
+- Synchronous option
 - Request cloning
 - Easier instances (options instead of arguments for *new*)
 - Custom headers on Request
