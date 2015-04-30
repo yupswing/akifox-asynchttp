@@ -5,6 +5,9 @@
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 [![Haxelib](https://img.shields.io/badge/distr-v0.4.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
+## BREAKING API VERSION 0.4
+If you were using akifox-asynchttp, please check what have changed in the new version 0.4 and update your code as explained [here](#whats-new-040-breaking-api)
+
 # akifox-asynchttp (com.akifox.asynchttp.*)
 **HAXE Asynchronous HTTP Request library**
 
