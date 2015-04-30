@@ -168,6 +168,10 @@ Fix your code! This edit was necessary to make future improvements easier with l
 ### Basic example
 
 ````haxe
+import com.akifox.asynchttp.*;
+
+//[...]
+
 // This is a basic GET example
 var request = new HttpRequest({
          url : "http://www.google.com",
@@ -188,6 +192,9 @@ request.send();
 ### All the available variables exposed
 
 ````haxe
+import com.akifox.asynchttp.*;
+
+// [...]
 
 // NOTE:
 // An HttpRequest is mutable until sent
@@ -392,7 +399,7 @@ It will handle binary file (i.e. Images, Zip...) or text file (i.e. Html, Xml, J
 **NOTE:** *Take care of the path on different platforms!*
 
 ````haxe
-request.callback = function(response:AsynchHttpResponse):Void {
+request.callback = function(response:HttpResponse):Void {
 					 var file = sys.io.File.write("/the/path/you/want/"+response.filename,response.contentIsBinary);
 		             try {
 		                file.write(response.contentRaw);
