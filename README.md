@@ -3,7 +3,7 @@
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.4.0-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.4.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 ## BREAKING API VERSION 0.4
 If you were using akifox-asynchttp, please check what have changed in the new version 0.4 and update your code as explained [here](CHANGELOG.md#whats-new-040-breaking-api)
@@ -174,8 +174,10 @@ var request = new HttpRequest({
   // NOTE: relative urls are accepted in FLASH and JAVASCRIPT
   url : "http://www.google.com",
 
-  // Callback	 The function that will handle the response)
+  // Callback	 The function that will handle the response
   callback : function(response:HttpResponse):Void {
+         // NOTE: If callbackError is set the errors will be given to that function instead
+         //       and response.isOK will be always True here
          if (response.isOK) {
            // A Good response
            // isOK == true if status is >= 200 and < 400
@@ -203,6 +205,7 @@ var request = new HttpRequest({
            var headers:HttpHeaders = response.headers;
 
            // HTTP response status (set to 0 if connection error)
+           // NOTE: If callbackError is set the errors will be given to that function instead
            var status:Int = response.status;
 
            // The response content (String or Bytes)
@@ -260,6 +263,19 @@ var request = new HttpRequest({
          }
       },
 
+  // !OPTIONAL! If set this function will handle all the response errors
+  // otherwise success and failure responses will be given to the standard 'callback'
+  callbackError : function(response:HttpResponse):Void {
+         // response.isOK is always False here
+
+         // HTTP response status
+         // 0 if connection error
+         // HTTP error status if connection is ok (<200 or >=400)
+         var status:Int = response.status;
+
+      },
+  }
+
   // HttpMethod | The request http method
   // Values are GET (default), POST, PUT or DELETE
   // NOTE: Only GET and POST are supported in Javascript
@@ -268,7 +284,7 @@ var request = new HttpRequest({
   // HttpHeaders | Custom HTTP headers (default 'empty')
   // NOTE: Not supported on FLASH and JAVASCRIPT
   // NOTE: You CANNOT set the basic headers as the library manage them
-  //       Forbidden headers: "User-Agent","Host","Content-Type" and "Content-Length"
+  //       Ignored headers: "User-Agent","Host","Content-Type" and "Content-Length"
   headers : new HttpHeaders({
                   'Pragma':'no-cache',
                   'Accept-Language':'en-US'
