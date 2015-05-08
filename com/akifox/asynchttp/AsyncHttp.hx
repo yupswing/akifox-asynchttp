@@ -197,6 +197,17 @@ class AsyncHttp
 
 	}
 
+	private inline function callback(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes) {
+		headers.finalise(); // makes the headers object immutable
+		var response = new HttpResponse(request,time,url,headers,status,content);
+		if (request.callbackError!=null && !response.isOK) {
+			request.callbackError(response);
+		} else if (request.callback!=null) {
+			request.callback(response);
+		}
+		response = null;
+	}
+
 	#if (neko || cpp || java)
 
 	// ==========================================================================================
@@ -335,10 +346,7 @@ class AsyncHttp
 		// RESPONSE
 		var url:URL=request.url;
 		var content:Dynamic=null;
-		var contentType:String=null;
 		var contentLength:Int=0;
-		var contentIsBinary:Bool=false;
-		var filename:String = DEFAULT_FILENAME;
 
 		var connected:Bool = false;
 		var redirect:Bool = false;
@@ -395,15 +403,10 @@ class AsyncHttp
 
 		if (connected) {
 
-			filename = determineFilename(url.toString());
-
 			// -- START RESPONSE CONTENT
 
 		  	// determine content properties
 			contentLength = Std.parseInt(headers.get('content-length'));
-			contentType = determineContentType(headers);
-			var contentKind:ContentKind = determineContentKind(contentType);
-			contentIsBinary = determineBinary(contentKind);
 
 			// determine transfer mode
 			var mode:HttpTransferMode = HttpTransferMode.UNDEFINED;
@@ -503,10 +506,7 @@ class AsyncHttp
 		var time:Float = elapsedTime(start);
 
 		log('${request.fingerprint} INFO: Response $status ($contentLength bytes in $time s)\n> ${request.method} $url');
-		if (request.callback!=null) {
-				headers.finalise(); // makes the headers object immutable
-		    request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
-		}
+		this.callback(request,time,url,headers,status,content);
   }
 
   #elseif flash
@@ -549,14 +549,9 @@ class AsyncHttp
 		var url:URL = request.url;
 		var status:Int = 0;
 		var headers = new HttpHeaders();
-		headers.finalise(); // makes the headers object immutable
-		var content:Dynamic = null;
+		var content:Bytes = null;
 
-		var contentType:String = DEFAULT_CONTENT_TYPE;
-		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
-
-		var filename:String = determineFilename(request.url.toString());
-		urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
+		urlLoader.dataFormat = URLLoaderDataFormat.BINARY;//(contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 
 		log('${request.fingerprint} INFO: Request\n> ${request.method} ${request.url}');
 
@@ -579,8 +574,7 @@ class AsyncHttp
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Status $status');
 			//content = null; // content will be retrive in EVENT.COMPLETE
-			filename = determineFilename(url.toString());
-			urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
+			//urlLoader.dataFormat = URLLoaderDataFormat.BINARY;//(contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 			httpstatusDone = true; //flash does not call this event
 		});
 
@@ -591,12 +585,10 @@ class AsyncHttp
 			status = e.status;
 		    log('${request.fingerprint} INFO: Response HTTP_Response_Status $status');
 			try { headers = convertFromFlashHeaders(e.responseHeaders); }
+			catch (e:Dynamic) {}
 			//content = null; // content will be retrive in EVENT.COMPLETE
-			contentType = determineContentType(headers);
-			contentIsBinary = determineBinary(determineContentKind(contentType));
-			filename = determineFilename(url.toString());
 
-			urlLoader.dataFormat = (contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
+			//urlLoader.dataFormat = URLLoaderDataFormat.BINARY;(contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 			httpstatusDone = true; //flash does not call this event
 		});
 
@@ -604,8 +596,7 @@ class AsyncHttp
 		    var time = elapsedTime(start);
 		    status = e.errorID;
 		    error('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
-		    if (request.callback!=null)
-		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+				this.callback(request,time,url,headers,status,content);
 		    urlLoader = null;
 		});
 
@@ -613,8 +604,7 @@ class AsyncHttp
 		    var time = elapsedTime(start);
 		    status = 0;
 		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
-		    if (request.callback!=null)
-		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+				this.callback(request,time,url,headers,status,content);
 		    urlLoader = null;
 		});
 
@@ -624,8 +614,7 @@ class AsyncHttp
 		    var time = elapsedTime(start);
 		    content = Bytes.ofString(e.target.data);
 		    log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
-		    if (request.callback!=null)
-		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+				this.callback(request,time,url,headers,status,content);
 		    urlLoader = null;
 		});
 
@@ -634,8 +623,7 @@ class AsyncHttp
 		} catch (msg:Dynamic) {
 		    var time = elapsedTime(start);
 		    error('${request.fingerprint} ERROR: Request failed -> $msg');
-		    if (request.callback!=null)
-		    	request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+				this.callback(request,time,url,headers,status,content);
 		    urlLoader = null;
 		}
 	}
@@ -649,14 +637,8 @@ class AsyncHttp
 		// RESPONSE FIELDS
 		var url:URL = request.url;
 		var status:Int = 0;
-		var headers = new HttpHeaders();
-		headers.finalise(); // makes the headers object immutable
-		var content:Dynamic = null;
-
-		var contentType:String = DEFAULT_CONTENT_TYPE;
-		var contentIsBinary:Bool = determineBinary(determineContentKind(contentType));
-
-		var filename:String = determineFilename(url.toString());
+		var headers = new HttpHeaders(); //no headers got on haxe.Http (so make it empty)
+		var content:Bytes = null;
 
 		var r = new haxe.Http(url.toString());
 		r.async = true; //default
@@ -670,23 +652,21 @@ class AsyncHttp
 		r.onError = function(msg:String) {
 	    	error('${request.fingerprint} ERROR: Request failed -> $msg');
 	    	var time = elapsedTime(start);
-	    	if (request.callback!=null)
-	    		request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+				this.callback(request,time,url,headers,status,content);
 		};
 
 		r.onData = function(data:String) {
 			if (!httpstatusDone) status = 200;
-	    	var time = elapsedTime(start);
-	    	content = data;
-	    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
-	    	if (request.callback!=null)
-	    		request.callback(new HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+    	var time = elapsedTime(start);
+    	content = Bytes.ofString(data);
+    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
+			this.callback(request,time,url,headers,status,content);
 		};
 
 		r.onStatus = function(http_status:Int) {
 			status = http_status;
-		    log('${request.fingerprint} INFO: Response HTTP Status $status');
-			httpstatusDone = true; //flash does not call this event
+		  log('${request.fingerprint} INFO: Response HTTP Status $status');
+			httpstatusDone = true; // it could not be called (so it will be set on 200 if no onStatus)
 		}
 
 		r.request(request.content!=null);
@@ -709,17 +689,17 @@ class AsyncHttp
 	#end
 	public static inline var DEFAULT_FILENAME = "untitled";
 
-	private static var _contentKindMatch:Array<ContentKindMatch> = [
+	private static var CONTENT_KIND_MATCHES:Array<ContentKindMatch> = [
 		{kind:ContentKind.IMAGE,regex:~/^image\/(jpe?g|png|gif)/i},
 		{kind:ContentKind.XML,regex:~/(application\/xml|text\/xml|\+xml)/i},
 		{kind:ContentKind.JSON,regex:~/^(application\/json|\+json)/i},
 		{kind:ContentKind.TEXT,regex:~/(^text|application\/javascript)/i} //text is the last one
 	];
 
-	// The content kind is used for autoParsing and determine if a content is Binary or Text
-	public function determineContentKind(contentType:String):ContentKind {
+	// The content kind is used to determine if a content is Binary or Text
+	public static function determineContentKind(contentType:String):ContentKind {
 		var contentKind = ContentKind.BYTES;
-		for (el in _contentKindMatch) {
+		for (el in CONTENT_KIND_MATCHES) {
 			if (el.regex.match(contentType)) {
 				contentKind = el.kind;
 				break;
@@ -728,27 +708,9 @@ class AsyncHttp
 		return contentKind;
 	}
 
-	public function determineBinary(contentKind:ContentKind):Bool {
+	public static function determineIsBinary(contentKind:ContentKind):Bool {
 		if (contentKind == ContentKind.BYTES || contentKind == ContentKind.IMAGE) return true;
 		return false;
-	}
-
-	public function determineContentType(headers:HttpHeaders):String {
-		var contentType = DEFAULT_CONTENT_TYPE;
-		if (headers!=null) {
-			if (headers.exists('content-type')) contentType = headers.get('content-type');
-		}
-		return contentType;
-	}
-
-	public function determineFilename(url:String):String {
-		var filename:String = "";
-		var rx = ~/([^?\/]*)($|\?.*)/;
-		if (rx.match(url)) {
-			filename = rx.matched(1);
-		}
-		if (filename=="") filename = AsyncHttp.DEFAULT_FILENAME;
-		return filename;
 	}
 
 	// ==========================================================================================

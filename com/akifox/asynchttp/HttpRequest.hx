@@ -14,6 +14,7 @@ typedef HttpRequestOptions = {
     ? http11: Bool,
     ? url: Dynamic,
     ? callback: HttpResponse->Void,
+    ? callbackError: HttpResponse->Void,
 		? headers : HttpHeaders,
 		? timeout : Int,
 		? method: String,
@@ -33,13 +34,14 @@ class HttpRequest
 	// ==========================================================================================
 
 	public function new(?options:HttpRequestOptions=null) {
-		_fingerprint = new AsyncHttp().randomUID(8);
+		_fingerprint = new AsyncHttp().randomUID(8); //make a random fingerprint to make this request unique
 
 		if(options != null) {
 			if(options.async != null)						async = options.async;
   		if(options.http11 != null)					http11 = options.http11;
 			if(options.url != null)							url = options.url;
 			if(options.callback != null)				callback = options.callback;
+			if(options.callbackError != null)		callbackError = options.callbackError;
 			if(options.headers != null)					_headers = options.headers.clone(); // get a mutable copy of the headers
 			if(options.timeout != null)					timeout = options.timeout;
 			if(options.method != null)					method = options.method;
@@ -71,6 +73,7 @@ class HttpRequest
 	}
 
 	public function send() {
+    // send the request
 		new AsyncHttp().send(this);
 	}
 
@@ -196,7 +199,7 @@ class HttpRequest
 		return _url = v;
 	}
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The HTTP Method
 	* accepted values HttpMethod.GET, .POST, .PUT, .DELETE
@@ -215,7 +218,7 @@ class HttpRequest
 		return _method = value;
 	}
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The HTTP Content
 	* Dynamic: could be a Bytes or a String, according to the Content-type
@@ -233,7 +236,7 @@ class HttpRequest
 		return _content = value;
 	}
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The HTTP Content-Type
 	* String: http://www.iana.org/assignments/media-types/media-types.xhtml
@@ -251,12 +254,11 @@ class HttpRequest
 		}
 		// default content type
 		if (value==null) value = DEFAULT_CONTENT_TYPE;
-		var ahttp = new AsyncHttp();
-		_contentIsBinary = ahttp.determineBinary(ahttp.determineContentKind(value));
+		_contentIsBinary = AsyncHttp.determineIsBinary(AsyncHttp.determineContentKind(value));
 		return _contentType = value;
 	}
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* Is the content binary data?
 	*/
@@ -273,9 +275,11 @@ class HttpRequest
 		return _contentIsBinary = value;
 	}
 
-   /*
+  /*
 	* ------------------------------------------------------------------------------------------
 	* The callback function to be called when the response returns
+  * NOTE: This will be called always if no callbackError is set
+  *       Otherwise it will be called only if the response is valid
 	*/
 	private var _callback:HttpResponse->Void=null;
 	public var callback(get,set):HttpResponse->Void;
@@ -288,6 +292,24 @@ class HttpRequest
 			return _callback;
 		}
 		return _callback = value;
+	}
+
+  /*
+	* ------------------------------------------------------------------------------------------
+	* The callback error (optional) function to be called when the response returns an error
+  * NOTE: This will be called only if set and in error case
+	*/
+	private var _callbackError:HttpResponse->Void=null;
+	public var callbackError(get,set):HttpResponse->Void;
+	private function get_callbackError():HttpResponse->Void {
+		return _callbackError;
+	}
+	private function set_callbackError(value:HttpResponse->Void):HttpResponse->Void {
+		if (_finalised) {
+			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.callbackError] Can\'t modify a property when the instance is already sent');
+			return _callbackError;
+		}
+		return _callbackError = value;
 	}
 
 }

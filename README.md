@@ -1,4 +1,4 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.0-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.1-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
@@ -97,6 +97,46 @@ import com.akifox.asynchttp.*;
   - [ ] Posting content on request (it should work but needs extensive tests)
   - [ ] Chain requests (one thread multiple requests)
   - [ ] Test socket solution on Flash target (it could be better than URLLoader)
+
+---
+
+## What's new 0.4.1
+
+- Added optional callbackError (to avoid the IF in the callback function)
+- Better internal content handling
+
+````haxe
+
+// These two requests are equivalent (you choose which way you prefer)
+
+// One single callback
+var request = new HttpRequest({
+         url : "http://www.google.com",
+    callback : function(response:HttpResponse):Void {
+                if (response.isOK) {
+                  trace(response.content);
+                  trace('DONE (HTTP STATUS ${response.status})');
+                } else {
+                  trace('ERROR (HTTP STATUS ${response.status})');
+                }
+              }  
+});
+
+
+// One callback for success and one for failure
+var request = new HttpRequest({
+             url : "http://www.google.com",
+        callback : function(response:HttpResponse):Void {
+                    // response.isOK is True
+                    trace(response.content);
+                    trace('DONE (HTTP STATUS ${response.status})');
+                  },
+   callbackError : function(response:HttpResponse):Void {
+                    // response.isOK is False
+                    trace('ERROR (HTTP STATUS ${response.status})');
+                  }
+});
+````
 
 ---
 

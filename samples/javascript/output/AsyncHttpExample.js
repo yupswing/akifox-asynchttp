@@ -286,6 +286,24 @@ com.akifox.asynchttp.ContentKind.BYTES.__enum__ = com.akifox.asynchttp.ContentKi
 com.akifox.asynchttp.AsyncHttp = function() {
 };
 com.akifox.asynchttp.AsyncHttp.__name__ = ["com","akifox","asynchttp","AsyncHttp"];
+com.akifox.asynchttp.AsyncHttp.determineContentKind = function(contentType) {
+	var contentKind = com.akifox.asynchttp.ContentKind.BYTES;
+	var _g = 0;
+	var _g1 = com.akifox.asynchttp.AsyncHttp.CONTENT_KIND_MATCHES;
+	while(_g < _g1.length) {
+		var el = _g1[_g];
+		++_g;
+		if(el.regex.match(contentType)) {
+			contentKind = el.kind;
+			break;
+		}
+	}
+	return contentKind;
+};
+com.akifox.asynchttp.AsyncHttp.determineIsBinary = function(contentKind) {
+	if(contentKind == com.akifox.asynchttp.ContentKind.BYTES || contentKind == com.akifox.asynchttp.ContentKind.IMAGE) return true;
+	return false;
+};
 com.akifox.asynchttp.AsyncHttp.log = function(message) {
 	if(com.akifox.asynchttp.AsyncHttp.logEnabled) console.log(message);
 };
@@ -294,8 +312,18 @@ com.akifox.asynchttp.AsyncHttp.error = function(message) {
 };
 com.akifox.asynchttp.AsyncHttp.prototype = {
 	send: function(request) {
+		if(request.get_finalised()) {
+			com.akifox.asynchttp.AsyncHttp.error("" + request.get_fingerprint() + " ERROR: Unable to send the request: it was already sent before\n" + "To send it again you have to clone it before.");
+			return;
+		}
 		request.finalise();
 		this.httpViaHaxeHttp(request);
+	}
+	,callback: function(request,time,url,headers,status,content) {
+		headers.finalise();
+		var response = new com.akifox.asynchttp.HttpResponse(request,time,url,headers,status,content);
+		if(request.get_callbackError() != null && !response.get_isOK()) (request.get_callbackError())(response); else if(request.get_callback() != null) (request.get_callback())(response);
+		response = null;
 	}
 	,httpViaHaxeHttp: function(request) {
 		var _g = this;
@@ -304,11 +332,7 @@ com.akifox.asynchttp.AsyncHttp.prototype = {
 		var url = request.get_url();
 		var status = 0;
 		var headers = new com.akifox.asynchttp.HttpHeaders();
-		headers.finalise();
 		var content = null;
-		var contentType = "text/plain";
-		var contentIsBinary = this.determineBinary(this.determineContentKind(contentType));
-		var filename = this.determineFilename(url.toString());
 		var r = new haxe.Http(url.toString());
 		r.async = true;
 		if(request.get_content() != null) r.setPostData(Std.string(request.get_content()));
@@ -316,14 +340,14 @@ com.akifox.asynchttp.AsyncHttp.prototype = {
 		r.onError = function(msg) {
 			com.akifox.asynchttp.AsyncHttp.error("" + request.get_fingerprint() + " ERROR: Request failed -> " + msg);
 			var time = _g.elapsedTime(start);
-			if(request.get_callback() != null) (request.get_callback())(new com.akifox.asynchttp.HttpResponse(request,time,url,headers,status,content,contentIsBinary,filename));
+			_g.callback(request,time,url,headers,status,content);
 		};
 		r.onData = function(data) {
 			if(!httpstatusDone) status = 200;
 			var time1 = _g.elapsedTime(start);
-			content = data;
+			content = haxe.io.Bytes.ofString(data);
 			com.akifox.asynchttp.AsyncHttp.log("" + request.get_fingerprint() + " INFO: Response Complete " + status + " (" + time1 + " s)\n> " + request.get_method() + " " + Std.string(request.get_url()));
-			if(request.get_callback() != null) (request.get_callback())(new com.akifox.asynchttp.HttpResponse(request,time1,url,headers,status,content,contentIsBinary,filename));
+			_g.callback(request,time1,url,headers,status,content);
 		};
 		r.onStatus = function(http_status) {
 			status = http_status;
@@ -334,38 +358,6 @@ com.akifox.asynchttp.AsyncHttp.prototype = {
 	}
 	,elapsedTime: function(start) {
 		return Std["int"]((haxe.Timer.stamp() - start) * 1000) / 1000;
-	}
-	,determineContentKind: function(contentType) {
-		var contentKind = com.akifox.asynchttp.ContentKind.BYTES;
-		var _g = 0;
-		var _g1 = com.akifox.asynchttp.AsyncHttp._contentKindMatch;
-		while(_g < _g1.length) {
-			var el = _g1[_g];
-			++_g;
-			if(el.regex.match(contentType)) {
-				contentKind = el.kind;
-				break;
-			}
-		}
-		return contentKind;
-	}
-	,determineBinary: function(contentKind) {
-		if(contentKind == com.akifox.asynchttp.ContentKind.BYTES || contentKind == com.akifox.asynchttp.ContentKind.IMAGE) return true;
-		return false;
-	}
-	,determineContentType: function(headers) {
-		var contentType = "text/plain";
-		if(headers != null) {
-			if(headers.exists("content-type")) contentType = headers.get("content-type");
-		}
-		return contentType;
-	}
-	,determineFilename: function(url) {
-		var filename = "";
-		var rx = new EReg("([^?/]*)($|\\?.*)","");
-		if(rx.match(url)) filename = rx.matched(1);
-		if(filename == "") filename = "untitled";
-		return filename;
 	}
 	,randomUID: function(size) {
 		if(size == null) size = 32;
@@ -465,6 +457,7 @@ com.akifox.asynchttp.HttpMethod.validate = function(value) {
 	return value;
 };
 com.akifox.asynchttp.HttpRequest = function(options) {
+	this._callbackError = null;
 	this._callback = null;
 	this._contentIsBinary = false;
 	this._contentType = "application/x-www-form-urlencoded";
@@ -482,6 +475,7 @@ com.akifox.asynchttp.HttpRequest = function(options) {
 		if(options.http11 != null) this.set_http11(options.http11);
 		if(options.url != null) this.set_url(options.url);
 		if(options.callback != null) this.set_callback(options.callback);
+		if(options.callbackError != null) this.set_callbackError(options.callbackError);
 		if(options.headers != null) this._headers = options.headers.clone();
 		if(options.timeout != null) this.set_timeout(options.timeout);
 		if(options.method != null) this.set_method(options.method);
@@ -492,7 +486,10 @@ com.akifox.asynchttp.HttpRequest = function(options) {
 };
 com.akifox.asynchttp.HttpRequest.__name__ = ["com","akifox","asynchttp","HttpRequest"];
 com.akifox.asynchttp.HttpRequest.prototype = {
-	toString: function() {
+	get_finalised: function() {
+		return this._finalised;
+	}
+	,toString: function() {
 		return "[HttpRequest <" + this._fingerprint + "> (" + this._method + " " + Std.string(this._url) + ")]";
 	}
 	,clone: function() {
@@ -602,8 +599,7 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 			return this._contentType;
 		}
 		if(value == null) value = "application/x-www-form-urlencoded";
-		var ahttp = new com.akifox.asynchttp.AsyncHttp();
-		this._contentIsBinary = ahttp.determineBinary(ahttp.determineContentKind(value));
+		this._contentIsBinary = com.akifox.asynchttp.AsyncHttp.determineIsBinary(com.akifox.asynchttp.AsyncHttp.determineContentKind(value));
 		return this._contentType = value;
 	}
 	,get_contentIsBinary: function() {
@@ -626,24 +622,34 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 		}
 		return this._callback = value;
 	}
+	,get_callbackError: function() {
+		return this._callbackError;
+	}
+	,set_callbackError: function(value) {
+		if(this._finalised) {
+			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.callbackError] Can't modify a property when the instance is already sent");
+			return this._callbackError;
+		}
+		return this._callbackError = value;
+	}
 	,__class__: com.akifox.asynchttp.HttpRequest
-	,__properties__: {set_callback:"set_callback",get_callback:"get_callback",set_contentIsBinary:"set_contentIsBinary",get_contentIsBinary:"get_contentIsBinary",set_contentType:"set_contentType",get_contentType:"get_contentType",set_content:"set_content",get_content:"get_content",set_method:"set_method",get_method:"get_method",set_url:"set_url",get_url:"get_url",set_http11:"set_http11",get_http11:"get_http11",set_async:"set_async",get_async:"get_async",set_timeout:"set_timeout",get_timeout:"get_timeout",get_headers:"get_headers",get_fingerprint:"get_fingerprint"}
+	,__properties__: {set_callbackError:"set_callbackError",get_callbackError:"get_callbackError",set_callback:"set_callback",get_callback:"get_callback",set_contentIsBinary:"set_contentIsBinary",get_contentIsBinary:"get_contentIsBinary",set_contentType:"set_contentType",get_contentType:"get_contentType",set_content:"set_content",get_content:"get_content",set_method:"set_method",get_method:"get_method",set_url:"set_url",get_url:"get_url",set_http11:"set_http11",get_http11:"get_http11",set_async:"set_async",get_async:"get_async",set_timeout:"set_timeout",get_timeout:"get_timeout",get_headers:"get_headers",get_fingerprint:"get_fingerprint",get_finalised:"get_finalised"}
 };
-com.akifox.asynchttp.HttpResponse = function(request,time,url,headers,status,content,contentIsBinary,filename) {
+com.akifox.asynchttp.HttpResponse = function(request,time,url,headers,status,content) {
+	this._filename = null;
 	this._request = request;
 	this._time = time;
 	this._url = url;
 	this._status = status;
 	this._isOK = this._status >= 200 && this._status < 400;
 	this._headers = headers;
-	this._contentIsBinary = contentIsBinary;
+	if(this._headers.exists("content-type")) this._contentType = this._headers.get("content-type"); else this._contentType = "text/plain";
+	this._contentKind = com.akifox.asynchttp.AsyncHttp.determineContentKind(this._contentType);
+	this._contentIsBinary = com.akifox.asynchttp.AsyncHttp.determineIsBinary(this._contentKind);
 	this._contentRaw = content;
 	if(!this._contentIsBinary) this._content = this.toText(); else this._content = this._contentRaw;
-	this._filename = filename;
-	if(this._headers.exists("content-type")) this._contentType = this._headers.get("content-type"); else this._contentType = "text/plain";
 	this._contentLength = 0;
 	if(this._headers.exists("content-length")) this._contentLength = Std.parseInt(this._headers.get("content-length")); else if(content != null) this._contentLength = this._content.length;
-	this._contentKind = new com.akifox.asynchttp.AsyncHttp().determineContentKind(this._contentType);
 };
 com.akifox.asynchttp.HttpResponse.__name__ = ["com","akifox","asynchttp","HttpResponse"];
 com.akifox.asynchttp.HttpResponse.prototype = {
@@ -729,6 +735,13 @@ com.akifox.asynchttp.HttpResponse.prototype = {
 		return this._time;
 	}
 	,get_filename: function() {
+		if(this._filename == null) {
+			var filename = "";
+			var rx = new EReg("([^?/]*)($|\\?.*)","");
+			if(rx.match(this._url.toString())) filename = rx.matched(1);
+			if(filename == "") filename = "untitled";
+			this._filename = filename;
+		}
 		return this._filename;
 	}
 	,get_isOK: function() {
@@ -959,8 +972,33 @@ haxe.ds.StringMap.prototype = {
 	,__class__: haxe.ds.StringMap
 };
 haxe.io = {};
-haxe.io.Bytes = function() { };
+haxe.io.Bytes = function(length,b) {
+	this.length = length;
+	this.b = b;
+};
 haxe.io.Bytes.__name__ = ["haxe","io","Bytes"];
+haxe.io.Bytes.ofString = function(s) {
+	var a = new Array();
+	var i = 0;
+	while(i < s.length) {
+		var c = StringTools.fastCodeAt(s,i++);
+		if(55296 <= c && c <= 56319) c = c - 55232 << 10 | StringTools.fastCodeAt(s,i++) & 1023;
+		if(c <= 127) a.push(c); else if(c <= 2047) {
+			a.push(192 | c >> 6);
+			a.push(128 | c & 63);
+		} else if(c <= 65535) {
+			a.push(224 | c >> 12);
+			a.push(128 | c >> 6 & 63);
+			a.push(128 | c & 63);
+		} else {
+			a.push(240 | c >> 18);
+			a.push(128 | c >> 12 & 63);
+			a.push(128 | c >> 6 & 63);
+			a.push(128 | c & 63);
+		}
+	}
+	return new haxe.io.Bytes(a.length,a);
+};
 haxe.io.Bytes.prototype = {
 	getString: function(pos,len) {
 		if(pos < 0 || len < 0 || pos + len > this.length) throw haxe.io.Error.OutsideBounds;
@@ -1426,7 +1464,7 @@ com.akifox.asynchttp.AsyncHttp.userAgent = "akifox-asynchttp";
 com.akifox.asynchttp.AsyncHttp.maxRedirections = 10;
 com.akifox.asynchttp.AsyncHttp.DEFAULT_CONTENT_TYPE = "text/plain";
 com.akifox.asynchttp.AsyncHttp.DEFAULT_FILENAME = "untitled";
-com.akifox.asynchttp.AsyncHttp._contentKindMatch = [{ kind : com.akifox.asynchttp.ContentKind.IMAGE, regex : new EReg("^image/(jpe?g|png|gif)","i")},{ kind : com.akifox.asynchttp.ContentKind.XML, regex : new EReg("(application/xml|text/xml|\\+xml)","i")},{ kind : com.akifox.asynchttp.ContentKind.JSON, regex : new EReg("^(application/json|\\+json)","i")},{ kind : com.akifox.asynchttp.ContentKind.TEXT, regex : new EReg("(^text|application/javascript)","i")}];
+com.akifox.asynchttp.AsyncHttp.CONTENT_KIND_MATCHES = [{ kind : com.akifox.asynchttp.ContentKind.IMAGE, regex : new EReg("^image/(jpe?g|png|gif)","i")},{ kind : com.akifox.asynchttp.ContentKind.XML, regex : new EReg("(application/xml|text/xml|\\+xml)","i")},{ kind : com.akifox.asynchttp.ContentKind.JSON, regex : new EReg("^(application/json|\\+json)","i")},{ kind : com.akifox.asynchttp.ContentKind.TEXT, regex : new EReg("(^text|application/javascript)","i")}];
 com.akifox.asynchttp.AsyncHttp.UID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 com.akifox.asynchttp.HttpHeaders.FORBIDDEN_ON_REQUEST = ["user-agent","host","content-type","content-length"];
 com.akifox.asynchttp.HttpMethod.GET = "GET";

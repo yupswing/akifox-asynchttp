@@ -19,7 +19,13 @@ class HttpResponse {
 
 	// ==========================================================================================
 
-	public function new(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,contentIsBinary:Bool,filename:String) {
+	public function new(request:HttpRequest, // the original request
+											time:Float,					 // the response time
+											url:URL,						 // the final url retrived (could be different from request.url because redirects)
+											headers:HttpHeaders, // the response headers
+											status:Int,					 // the response status (0 if error otherwise HTTP standard response code)
+											content:Bytes 			 // the response content
+										 ) {
 
 		_request = request;
 		_time = time;
@@ -29,16 +35,17 @@ class HttpResponse {
 		_isOK = (_status >= 200 && _status < 400);
 		_headers = headers;
 
-		_contentIsBinary = contentIsBinary;
+		// set content type
+		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
+		else _contentType = AsyncHttp.DEFAULT_CONTENT_TYPE;
+
+		// content properties
+		_contentKind = AsyncHttp.determineContentKind(_contentType);
+		_contentIsBinary = AsyncHttp.determineIsBinary(_contentKind);
+
 		_contentRaw = content;
 		if (!_contentIsBinary) _content = toText();
 		else _content = _contentRaw;
-
-		_filename = filename;
-
-		//set content type
-		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
-		else _contentType = AsyncHttp.DEFAULT_CONTENT_TYPE;
 
 		//set content length
 		_contentLength = 0;
@@ -48,9 +55,6 @@ class HttpResponse {
 		else if (content != null) {
 			_contentLength = _content.length; //works on Bytes and String
 		}
-
-		// determine content kind
-		_contentKind = new AsyncHttp().determineContentKind(_contentType);
 
 	}
 
@@ -225,9 +229,18 @@ class HttpResponse {
 		return _time;
 	}
 
-	private var _filename:String;
+	private var _filename:String=null;
 	public var filename(get,never):String;
 	private function get_filename():String {
+		if (_filename==null) {
+			var filename:String = "";
+			var rx = ~/([^?\/]*)($|\?.*)/;
+			if (rx.match(_url.toString())) {
+				filename = rx.matched(1);
+			}
+			if (filename=="") filename = AsyncHttp.DEFAULT_FILENAME;
+			_filename = filename;
+		}
 		return _filename;
 	}
 
@@ -236,4 +249,7 @@ class HttpResponse {
 	private function get_isOK():Bool {
 		return _isOK;
 	}
+
+	// ==========================================================================================
+
 }
