@@ -273,8 +273,9 @@ var request = new HttpRequest({
          // HTTP error status if connection is ok (<200 or >=400)
          var status:Int = response.status;
 
+         trace('ERROR (HTTP STATUS ${status})');
+
       },
-  }
 
   // HttpMethod | The request http method
   // Values are GET (default), POST, PUT or DELETE
