@@ -2,12 +2,20 @@ package com.akifox.asynchttp;
 import com.akifox.asynchttp.AsyncHttp;
 
 /**
+##HttpRequestOptions
+
+This object is used to pass parameters to an HttpRequest class instance
+
+(All the parameter are directly connected to the HttpRequest properties
+
+**Check the HttpRequest documentation to have more information on every parameter**)
 
 @author Simone Cingano (yupswing) [Akifox Studio](http://akifox.com)
 
+@repo [akifox-asynchttp repository](https://github.com/yupswing/akifox-asynchttp)
+
 @licence MIT Licence
 **/
-
 typedef HttpRequestOptions = {
 		//? fingerprint : String,
     ? async: Bool,
@@ -23,16 +31,38 @@ typedef HttpRequestOptions = {
 		? contentIsBinary: Bool
 }
 
+/**
+##HttpRequest
+
+This class represents an Http Request
+
+@author Simone Cingano (yupswing) [Akifox Studio](http://akifox.com)
+
+@repo [akifox-asynchttp repository](https://github.com/yupswing/akifox-asynchttp)
+
+@licence MIT Licence
+**/
 class HttpRequest
 {
-	private var _finalised:Bool = false; //it was .sent at least once (no edit allowed)
+
+  /**
+  * Tell if the instance is immutable
+  *
+  * **NOTE:** The only way to change an immutable instance is copying it (`instance.clone()`) and change the copy
+  **/
 	public var finalised(get,never):Bool;
+	private var _finalised:Bool = false; //it was .sent at least once (no edit allowed)
 	private function get_finalised():Bool {
 		return _finalised;
 	}
 
 	// ==========================================================================================
 
+  /**
+  * Class instance
+  *
+  * @param options  HttpRequestOptions object or null (**NOTE:** every parameter could be changed also after the class instance)
+  **/
 	public function new(?options:HttpRequestOptions=null) {
 		_fingerprint = new AsyncHttp().randomUID(8); //make a random fingerprint to make this request unique
 
@@ -51,12 +81,20 @@ class HttpRequest
 		}
 	}
 
+  /**
+  * @returns   Debug representation of the HttpRequest instance
+  **/
 	public function toString():String {
 		return '[HttpRequest <$_fingerprint> ($_method $_url)]';
 	}
 
-	// ------------------------------------------------------------------------------------------
-
+  /**
+  * Deep copy of the HttpRequest
+  *
+  * **NOTE:** The copy will be always mutable despite of the master status
+  *
+  * @returns   A new HttpRequest
+  **/
 	public function clone():HttpRequest {
 		return new HttpRequest({
 			async : this._async,
@@ -72,34 +110,46 @@ class HttpRequest
 		});
 	}
 
-	public function send() {
-    // send the request
-		new AsyncHttp().send(this);
-	}
-
+  /**
+  * Make this instance immutable
+  *
+  * **NOTE:** This method is called automatically once this HttpRequest instance is sent
+  **/
 	public function finalise() {
     _headers.finalise(); // makes the headers object immutable
 		_finalised = true; // it will not change
 	}
 
+  // ==========================================================================================
+
+
+  /**
+  * Send the request and call the callback when it is done
+  *
+  * **NOTE:** When `async==true` the application execution will be hold until the request is completed
+  *
+  * **NOTE:** When a HttpRequest is sent the instance is made immutable (you have to clone it to send again the same request)
+  **/
+	public function send() {
+		new AsyncHttp().send(this);
+	}
+
 	// ==========================================================================================
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* The fingerprint is a unique 8 char key which identify this request
-	*/
-	private var _fingerprint:String;
+  /**
+	* The fingerprint is a unique 8 char key which identify this request instance
+	**/
 	public var fingerprint(get,never):String;
+	private var _fingerprint:String;
 	private function get_fingerprint():String {
 		return _fingerprint;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* Request headers
-	*/
-	private var _headers:HttpHeaders = new HttpHeaders();
+  /**
+	* The request headers
+	**/
 	public var headers(get,never):HttpHeaders;
+	private var _headers:HttpHeaders = new HttpHeaders();
 	private function get_headers():HttpHeaders {
 		return _headers;
 	}
@@ -111,12 +161,13 @@ class HttpRequest
     return _headers = value;
   }
 
-   /*
-	* ------------------------------------------------------------------------------------------
-	* The timeout in seconds
-	*/
-	private var _timeout:Int=10; //default 10 seconds
+  /**
+  * The request timeout in seconds (default:10)
+  *
+  * If the request receive no answer for more than the timeout it aborts
+  **/
 	public var timeout(get,set):Int;
+	private var _timeout:Int=10; //default 10 seconds
 	private function get_timeout():Int {
 		return _timeout;
 	}
@@ -129,12 +180,15 @@ class HttpRequest
 		return _timeout = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* Asynchronous
-	*/
-	private var _async:Bool=true;
+  /**
+  * Asynchronous
+  *
+  * **NOTE:** When `async==true` the application execution will be hold until the request is completed
+  *
+  * **NOTE:** Not supported in FLASH due to platform limitations
+  **/
 	public var async(get,set):Bool;
+	private var _async:Bool=true;
 	private function get_async():Bool {
 		return _async;
 	}
@@ -146,12 +200,13 @@ class HttpRequest
 		return _async = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* HTTP/1.1 (otherwise HTTP/1.0)
-	*/
-	private var _http11:Bool=true;
+  /**
+  * Http Protocol Version flag
+  *
+  * Tells if enable HTTP/1.1 (true <default>) or HTTP/1.0 (false)
+  **/
 	public var http11(get,set):Bool;
+	private var _http11:Bool=true;
 	private function get_http11():Bool {
 		return _http11;
 	}
@@ -163,13 +218,17 @@ class HttpRequest
 		return _http11 = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* The URL
-	* complete format: http://host:port/path?querystring
-	*/
-	private var _url:URL = null;
+  /**
+  * The URL to be retrived
+  *
+  * Accept a string (format: `protocol://host:port/resource?querystring`) or a URL instance
+  *
+  * **NOTE:** It supports HTTP+HTTPS protocol (HTTPS on CPP+NEKO platform only with the HXSSL library)
+  *
+  * **NOTE:** On FLASH and JAVASCRIPT relative URLs are allowed
+  **/
 	public var url(get,set):URL;
+	private var _url:URL = null;
 	private function get_url():URL {
 		return _url;
 	}
@@ -187,7 +246,7 @@ class HttpRequest
     }
 
 		#if (!js && !flash)
-      if (v.relative || !v.http) {
+      if (v.isRelative || !v.isHttp) {
         AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
       }
 		#end
@@ -198,14 +257,15 @@ class HttpRequest
 		}
 		return _url = v;
 	}
-
-  /*
-	* ------------------------------------------------------------------------------------------
+  /**
 	* The HTTP Method
-	* accepted values HttpMethod.GET, .POST, .PUT, .DELETE
-	*/
-	private var _method:String=HttpMethod.DEFAULT_METHOD;
+  *
+  * Accepted values are HttpMethod.GET, .POST, .PUT, .DELETE
+  *
+  * **NOTE:** On JAVASCRIPT only GET and POST are functional due to platform limitations
+  **/
 	public var method(get,set):String;
+	private var _method:String=HttpMethod.DEFAULT_METHOD;
 	private function get_method():String {
 		return _method;
 	}
@@ -218,13 +278,13 @@ class HttpRequest
 		return _method = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
+  /**
 	* The HTTP Content
-	* Dynamic: could be a Bytes or a String, according to the Content-type
-	*/
-	private var _content:Dynamic=null;
+  *
+  * **NOTE:** You could provide  a Bytes or a String according to the Content-type (Binary or Text)
+  **/
 	public var content(get,set):Dynamic;
+	private var _content:Dynamic=null;
 	private function get_content():Dynamic {
 		return _content;
 	}
@@ -236,14 +296,14 @@ class HttpRequest
 		return _content = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* The HTTP Content-Type
-	* String: http://www.iana.org/assignments/media-types/media-types.xhtml
-	*/
+  /**
+	* The HTTP Content-Type (default: `application/x-www-form-urlencoded`)
+  *
+  * Content-Type list: (http://www.iana.org/assignments/media-types/media-types.xhtml)
+	**/
+	public var contentType(get,set):String;
 	private static inline var DEFAULT_CONTENT_TYPE:String = "application/x-www-form-urlencoded";
 	private var _contentType:String=DEFAULT_CONTENT_TYPE;
-	public var contentType(get,set):String;
 	private function get_contentType():String {
 		return _contentType;
 	}
@@ -258,12 +318,13 @@ class HttpRequest
 		return _contentType = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* Is the content binary data?
+  /**
+	* Content binary flag (tells if the content binary or text)
+  *
+  * **NOTE:** This is set automatically when a content-type is set
 	*/
-	private var _contentIsBinary:Bool=false;
 	public var contentIsBinary(get,set):Bool;
+	private var _contentIsBinary:Bool=false;
 	private function get_contentIsBinary():Bool {
 		return _contentIsBinary;
 	}
@@ -275,14 +336,15 @@ class HttpRequest
 		return _contentIsBinary = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
+  /**
 	* The callback function to be called when the response returns
-  * NOTE: This will be called always if no callbackError is set
-  *       Otherwise it will be called only if the response is valid
-	*/
-	private var _callback:HttpResponse->Void=null;
+  *
+  * **NOTE:** This will be called always if no `callbackError` is set
+  *
+  * Otherwise it will be called only if the response is valid
+	**/
 	public var callback(get,set):HttpResponse->Void;
+	private var _callback:HttpResponse->Void=null;
 	private function get_callback():HttpResponse->Void {
 		return _callback;
 	}
@@ -294,13 +356,13 @@ class HttpRequest
 		return _callback = value;
 	}
 
-  /*
-	* ------------------------------------------------------------------------------------------
-	* The callback error (optional) function to be called when the response returns an error
-  * NOTE: This will be called only if set and in error case
-	*/
-	private var _callbackError:HttpResponse->Void=null;
+  /**
+	* The callback error (**optional**) function to be called when the response returns an error
+  *
+  * **NOTE:** This will be called only if set and in error case
+	**/
 	public var callbackError(get,set):HttpResponse->Void;
+	private var _callbackError:HttpResponse->Void=null;
 	private function get_callbackError():HttpResponse->Void {
 		return _callbackError;
 	}
