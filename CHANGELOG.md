@@ -1,6 +1,10 @@
 
 # Changelog
 
+## What's new 0.4.2
+
+- Minor fixes
+
 ## What's new 0.4.1
 
 - Added optional callbackError (to avoid the IF in the callback function)

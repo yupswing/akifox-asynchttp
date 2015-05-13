@@ -61,7 +61,7 @@ class HttpResponse {
 	// ==========================================================================================
 
 	public function toString():String {
-		return '[HttpResponse <$_fingerprint> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
+		return '[HttpResponse <${_request.fingerprint}> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
 	}
 
 	// ==========================================================================================
@@ -89,7 +89,7 @@ class HttpResponse {
 		try {
 			_contentXml = Xml.parse(toText());
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Xml -> $msg');
+			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Xml -> $msg');
 		}
 		return _contentXml;
 	}
@@ -99,7 +99,7 @@ class HttpResponse {
 		try {
 			_contentJson = haxe.Json.parse(toText());
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Json -> $msg');
+			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Json -> $msg');
 		}
 		return _contentJson;
 	}
@@ -109,7 +109,7 @@ class HttpResponse {
 		try {
 			_contentText = Std.string(_contentRaw);
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Text -> $msg');
+			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Text -> $msg');
 		}
 		return _contentText;
 	}
@@ -147,7 +147,7 @@ class HttpResponse {
 			_contentBitmapData = openfl.display.BitmapData.fromBytes(bytearray);
 			#end
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse $_fingerprint ERROR: parse Image -> $msg');
+			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Image -> $msg');
 		}
 		return _contentBitmapData;
 	}
@@ -164,7 +164,6 @@ class HttpResponse {
 		return _request;
 	}
 
-	private var _fingerprint:String;
 	public var fingerprint(get,never):String;
 	private function get_fingerprint():String {
 		return _request.fingerprint;
