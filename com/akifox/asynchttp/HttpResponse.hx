@@ -24,7 +24,8 @@ class HttpResponse {
 											url:URL,						 // the final url retrived (could be different from request.url because redirects)
 											headers:HttpHeaders, // the response headers
 											status:Int,					 // the response status (0 if error otherwise HTTP standard response code)
-											content:Bytes 			 // the response content
+											content:Bytes, 			 // the response content
+											?error:String        // the internal error message (optional)
 										 ) {
 
 		_request = request;
@@ -34,6 +35,7 @@ class HttpResponse {
 		_status = status;
 		_isOK = (_status >= 200 && _status < 400);
 		_headers = headers;
+		_error = error;
 
 		// set content type
 		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
@@ -248,6 +250,12 @@ class HttpResponse {
 	public var isOK(get,never):Bool;
 	private function get_isOK():Bool {
 		return _isOK;
+	}
+
+	private var _error:String=null;
+	public var error(get,never):String;
+	private function get_error():String {
+		return _error;
 	}
 
 	// ==========================================================================================
