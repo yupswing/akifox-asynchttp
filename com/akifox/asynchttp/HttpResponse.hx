@@ -141,7 +141,7 @@ class HttpResponse {
 			// convert from Bytes to ByteArray
 			var bytearray = new openfl.utils.ByteArray();
 			bytearray.writeUTFBytes(_contentRaw.toString());
-			#if (legacy || v2)
+			#if (openfl_legacy || v2)
 			_contentBitmapData = openfl.display.BitmapData.loadFromBytes(bytearray);
 			#else
 			_contentBitmapData = openfl.display.BitmapData.fromBytes(bytearray);
