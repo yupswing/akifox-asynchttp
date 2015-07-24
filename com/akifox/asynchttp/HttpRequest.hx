@@ -181,11 +181,11 @@ class HttpRequest
 	}
 
   /**
-  * Asynchronous
+  * Asynchronous (default is `true`)
   *
   * **NOTE:** When `async==true` the application execution will be hold until the request is completed
   *
-  * **NOTE:** Not supported in FLASH due to platform limitations
+  * **NOTE:** Always true in FLASH due to platform limitations
   **/
 	public var async(get,set):Bool;
 	private var _async:Bool=true;
