@@ -247,9 +247,9 @@ class AsyncHttp
 
 	}
 
-	private inline function callback(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes) {
+	private inline function callback(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,?error:String) {
 		headers.finalise(); // makes the headers object immutable
-		var response = new HttpResponse(request,time,url,headers,status,content);
+		var response = new HttpResponse(request,time,url,headers,status,content,error);
 		if (request.callbackError!=null && !response.isOK) {
 			request.callbackError(response);
 		} else if (request.callback!=null) {
@@ -264,8 +264,13 @@ class AsyncHttp
 	// Multi-thread version for neko, CPP + JAVA
 
 	private function httpViaSocket_Threaded() {
-		var request:HttpRequest = Thread.readMessage(true);
-		httpViaSocket(request);
+		var request:HttpRequest = null;
+		try {
+			request = Thread.readMessage(true);
+			httpViaSocket(request);
+		} catch(error:String) {
+			callback(request,0.0,request.url,new HttpHeaders(),0,null,error);
+		}
 	}
 
 	// Open a socket, send a request and get the headers
@@ -645,16 +650,16 @@ class AsyncHttp
 		urlLoader.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = e.errorID;
-		    error('${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}');
-				this.callback(request,time,url,headers,status,content);
+		    var error = '${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}';
+				this.callback(request,time,url,headers,status,content,error);
 		    urlLoader = null;
 		});
 
 		urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = 0;
-		    error('${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}');
-				this.callback(request,time,url,headers,status,content);
+		    var error = '${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}';
+				this.callback(request,time,url,headers,status,content,error);
 		    urlLoader = null;
 		});
 
@@ -663,8 +668,8 @@ class AsyncHttp
 
 		    var time = elapsedTime(start);
 		    content = Bytes.ofString(e.target.data);
-		    log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
-				this.callback(request,time,url,headers,status,content);
+		    var error = '${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}';
+				this.callback(request,time,url,headers,status,content,error);
 		    urlLoader = null;
 		});
 
@@ -672,8 +677,8 @@ class AsyncHttp
 		  	urlLoader.load(urlRequest);
 		} catch (msg:Dynamic) {
 		    var time = elapsedTime(start);
-		    error('${request.fingerprint} ERROR: Request failed -> $msg');
-				this.callback(request,time,url,headers,status,content);
+		    var error = '${request.fingerprint} ERROR: Request failed -> $msg';
+				this.callback(request,time,url,headers,status,content,error);
 		    urlLoader = null;
 		}
 	}
@@ -700,9 +705,9 @@ class AsyncHttp
 		var httpstatusDone = false;
 
 		r.onError = function(msg:String) {
-	    	error('${request.fingerprint} ERROR: Request failed -> $msg');
+	    	var error = '${request.fingerprint} ERROR: Request failed -> $msg';
 	    	var time = elapsedTime(start);
-				this.callback(request,time,url,headers,status,content);
+				this.callback(request,time,url,headers,status,content,error);
 		};
 
 		r.onData = function(data:String) {

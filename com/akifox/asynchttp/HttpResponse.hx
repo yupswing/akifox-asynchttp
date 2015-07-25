@@ -35,8 +35,9 @@ class HttpResponse {
 	* @param 	headers		the response headers
 	* @param 	status		the response status (0 if error otherwise HTTP standard response code)
 	* @param 	content		the response content
+	* @param  error     the internal error message (optional)
   **/
-	public function new(request:HttpRequest, time:Float, url:URL, headers:HttpHeaders, status:Int, content:Bytes ) {
+	public function new(request:HttpRequest, time:Float, url:URL, headers:HttpHeaders, status:Int, content:Bytes, ?error:String ) {
 
 		_request = request;
 		_time = time;
@@ -45,6 +46,7 @@ class HttpResponse {
 		_status = status;
 		_isOK = (_status >= 200 && _status < 400);
 		_headers = headers;
+		_error = error;
 
 		// set content type
 		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
@@ -357,6 +359,15 @@ class HttpResponse {
 	private var _isOK:Bool;
 	private function get_isOK():Bool {
 		return _isOK;
+	}
+
+	/**
+	* Error message
+	**/
+	private var _error:String=null;
+	public var error(get,never):String;
+	private function get_error():String {
+		return _error;
 	}
 
 	// ==========================================================================================
