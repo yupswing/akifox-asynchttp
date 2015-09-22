@@ -3,7 +3,7 @@
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.4.1-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.4.2-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 ## BREAKING API VERSION 0.4
 If you were using akifox-asynchttp, please check what have changed in the new version 0.4 and update your code as explained [here](CHANGELOG.md#whats-new-040-breaking-api)
