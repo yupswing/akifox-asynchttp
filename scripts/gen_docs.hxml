@@ -1,5 +1,3 @@
--lib openfl
--lib lime
 --no-output
 --macro include('com.akifox.asynchttp')
 -D doc-gen

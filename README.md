@@ -1,4 +1,4 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.1-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.2-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
@@ -27,6 +27,7 @@ Thanks mate!
  * [Features](#features)
  * [What's new](CHANGELOG.md)
  * [Important platform notes](#important-platform-notes)
+ * [Documentation](#documentation)
  * [Quick reference](#quick-reference)
  * [Examples](#examples)
  * [Write to a file the response](#write-to-a-file-the-response)
@@ -116,6 +117,10 @@ import com.akifox.asynchttp.*;
 - you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
 - no support for methods PUT and DELETE
 
+## Documentation
+
+I strongly suggest to read the Quick Reference to understand how the class works, but if you need a complete documentation about all the library you can read the [Online Documentation](https://dl.dropboxusercontent.com/u/683344/akifox/akifox-asynchttp/docs/index.html)
+
 ## Quick reference
 
 ### Basic example
@@ -131,9 +136,9 @@ var request = new HttpRequest({
     callback : function(response:HttpResponse):Void {
                 if (response.isOK) {
                   trace(response.content);
-                  trace('DONE (HTTP STATUS ${response.status})');
+                  trace('DONE ${response.status}');
                 } else {
-                  trace('ERROR (HTTP STATUS ${response.status})');
+                  trace('ERROR ${response.status} ${response.error}');
                 }
               }  
 });
@@ -156,8 +161,8 @@ import com.akifox.asynchttp.*;
 // Force log to console (default enabled on -debug)
 AsyncHttp.logEnabled = true;
 
-// Force not throwing errors but trace (default disabled on -debug)
-AsyncHttp.errorSafe = true;
+// Force error log to console (default enabled)
+AsyncHttp.logErrorEnabled = true;
 
 // Global custom user-agent header (default "akifox-asynchttp") [v0.4+]
 AsyncHttp.userAgent = "akifox-asynchttp";
@@ -204,7 +209,7 @@ var request = new HttpRequest({
            // NOTE: Null in FLASH and JAVASCRIPT
            var headers:HttpHeaders = response.headers;
 
-           // HTTP response status (set to 0 if connection error)
+           // HTTP response status (set to 0 if connection error occurs)
            // NOTE: If callbackError is set the errors will be given to that function instead
            var status:Int = response.status;
 
@@ -222,7 +227,7 @@ var request = new HttpRequest({
            // NOTE: Always 'text/plain' in JAVASCRIPT
            var contentType:String = response.contentType;
 
-           // The response content length (in bytes or char)
+           // The response content length
            var contentLength:Int = response.contentLength;
 
            // Tells if the response.content is String or Byte
@@ -258,7 +263,7 @@ var request = new HttpRequest({
          } else {
 
            // Any connection or status error
-           trace('ERROR (HTTP STATUS ${response.status})');
+           trace('ERROR ${response.status} ${response.error})');
 
          }
       },
