@@ -157,7 +157,7 @@ class AsyncHttp
 	/**
 	* **true**: log to console
 	*
-	* **false**: throw errors (useful to stop execution during debug phases)
+	* **false**: throw errors (useful to stop execution during single threaded debug phases)
 	*
 	* (default set to false on -debug)
 	**/
@@ -247,7 +247,7 @@ class AsyncHttp
 
 	}
 
-	private inline function callback(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,?error:String) {
+	private inline function callback(request:HttpRequest,time:Float,url:URL,headers:HttpHeaders,status:Int,content:Bytes,?error:String="") {
 		headers.finalise(); // makes the headers object immutable
 		var response = new HttpResponse(request,time,url,headers,status,content,error);
 		if (request.callbackError!=null && !response.isOK) {
@@ -285,7 +285,7 @@ class AsyncHttp
 			s = new SocketSSL();
 			#if (!php && !java && !hxssl)
 			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n'+
-																		'On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl`');
+					'**** On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl` ****');
 			#end
 		} else {
 			s = new SocketTCP();

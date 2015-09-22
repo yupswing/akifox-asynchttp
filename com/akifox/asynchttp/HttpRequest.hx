@@ -17,18 +17,18 @@ This object is used to pass parameters to an HttpRequest class instance
 @licence MIT Licence
 **/
 typedef HttpRequestOptions = {
-		//? fingerprint : String,
-    ? async: Bool,
-    ? http11: Bool,
-    ? url: Dynamic,
-    ? callback: HttpResponse->Void,
-    ? callbackError: HttpResponse->Void,
-		? headers : HttpHeaders,
-		? timeout : Int,
-		? method: String,
-		? content: Dynamic,
-		? contentType: String,
-		? contentIsBinary: Bool
+  //? fingerprint : String,
+  ? async: Bool,
+  ? http11: Bool,
+  ? url: Dynamic,
+  ? callback: HttpResponse->Void,
+  ? callbackError: HttpResponse->Void,
+	? headers : HttpHeaders,
+	? timeout : Int,
+	? method: String,
+	? content: Dynamic,
+	? contentType: String,
+	? contentIsBinary: Bool
 }
 
 /**
@@ -67,16 +67,16 @@ class HttpRequest
 		_fingerprint = new AsyncHttp().randomUID(8); //make a random fingerprint to make this request unique
 
 		if(options != null) {
-			if(options.async != null)						async = options.async;
-  		if(options.http11 != null)					http11 = options.http11;
-			if(options.url != null)							url = options.url;
-			if(options.callback != null)				callback = options.callback;
-			if(options.callbackError != null)		callbackError = options.callbackError;
-			if(options.headers != null)					_headers = options.headers.clone(); // get a mutable copy of the headers
-			if(options.timeout != null)					timeout = options.timeout;
-			if(options.method != null)					method = options.method;
-			if(options.content != null)					content = options.content;
-			if(options.contentType != null)			contentType = options.contentType;
+			if(options.async != null)  async = options.async;
+      if(options.http11 != null)  http11 = options.http11;
+			if(options.url != null)  url = options.url;
+			if(options.callback != null) callback = options.callback;
+			if(options.callbackError != null)	callbackError = options.callbackError;
+			if(options.headers != null)	_headers = options.headers.clone(); // get a mutable copy of the headers
+			if(options.timeout != null)	timeout = options.timeout;
+			if(options.method != null) method = options.method;
+			if(options.content != null)	content = options.content;
+			if(options.contentType != null)	contentType = options.contentType;
 			if(options.contentIsBinary != null)	contentIsBinary = options.contentIsBinary;
 		}
 	}
@@ -145,21 +145,21 @@ class HttpRequest
 		return _fingerprint;
 	}
 
-  /**
-	* The request headers
-	**/
+   /**
+   * The request headers
+   **/
 	public var headers(get,never):HttpHeaders;
 	private var _headers:HttpHeaders = new HttpHeaders();
 	private function get_headers():HttpHeaders {
 		return _headers;
 	}
-  private function set_headers(value:HttpHeaders):HttpHeaders {
-  	if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
-      return _headers;
+    private function set_headers(value:HttpHeaders):HttpHeaders {
+        if (_finalised) {
+            AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
+        return _headers;
     }
     return _headers = value;
-  }
+    }
 
   /**
   * The request timeout in seconds (default:10)
@@ -233,32 +233,32 @@ class HttpRequest
 		return _url;
 	}
 	private function set_url(value:Dynamic):URL {
+        var v:URL = null;
+        switch(Type.getClassName(Type.getClass(value))) {
+          case 'String':
+            v = new URL(value);
+          case 'com.akifox.asynchttp.URL' | 'URL':
+            v = value.clone();
+          default:
+    		AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
+    		return _url;
+        }
 
-    var v:URL = null;
-    switch(Type.getClassName(Type.getClass(value))) {
-      case 'String':
-        v = new URL(value);
-      case 'com.akifox.asynchttp.URL' | 'URL':
-        v = value.clone();
-      default:
-  			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
-  			return _url;
-    }
+        #if (!js && !flash)
+        if (v.isRelative || !v.isHttp) {
+            AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
+        }
+        #end
 
-		#if (!js && !flash)
-      if (v.isRelative || !v.isHttp) {
-        AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
-      }
-		#end
-
-		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
-			return _url;
-		}
-		return _url = v;
+        if (_finalised) {
+        	AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
+        	return _url;
+        }
+        return _url = v;
 	}
+
   /**
-	* The HTTP Method
+  * The HTTP Method
   *
   * Accepted values are HttpMethod.GET, .POST, .PUT, .DELETE
   *
@@ -279,7 +279,7 @@ class HttpRequest
 	}
 
   /**
-	* The HTTP Content
+  * The HTTP Content
   *
   * **NOTE:** You could provide  a Bytes or a String according to the Content-type (Binary or Text)
   **/
@@ -297,10 +297,10 @@ class HttpRequest
 	}
 
   /**
-	* The HTTP Content-Type (default: `application/x-www-form-urlencoded`)
+  * The HTTP Content-Type (default: `application/x-www-form-urlencoded`)
   *
   * Content-Type list: (http://www.iana.org/assignments/media-types/media-types.xhtml)
-	**/
+  **/
 	public var contentType(get,set):String;
 	private static inline var DEFAULT_CONTENT_TYPE:String = "application/x-www-form-urlencoded";
 	private var _contentType:String=DEFAULT_CONTENT_TYPE;
@@ -319,10 +319,10 @@ class HttpRequest
 	}
 
   /**
-	* Content binary flag (tells if the content binary or text)
+  * Content binary flag (tells if the content binary or text)
   *
   * **NOTE:** This is set automatically when a content-type is set
-	*/
+  */
 	public var contentIsBinary(get,set):Bool;
 	private var _contentIsBinary:Bool=false;
 	private function get_contentIsBinary():Bool {
@@ -337,12 +337,12 @@ class HttpRequest
 	}
 
   /**
-	* The callback function to be called when the response returns
+  * The callback function to be called when the response returns
   *
   * **NOTE:** This will be called always if no `callbackError` is set
   *
   * Otherwise it will be called only if the response is valid
-	**/
+  **/
 	public var callback(get,set):HttpResponse->Void;
 	private var _callback:HttpResponse->Void=null;
 	private function get_callback():HttpResponse->Void {
@@ -357,10 +357,10 @@ class HttpRequest
 	}
 
   /**
-	* The callback error (**optional**) function to be called when the response returns an error
+  * The callback error (**optional**) function to be called when the response returns an error
   *
   * **NOTE:** This will be called only if set and in error case
-	**/
+  **/
 	public var callbackError(get,set):HttpResponse->Void;
 	private var _callbackError:HttpResponse->Void=null;
 	private function get_callbackError():HttpResponse->Void {

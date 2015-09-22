@@ -38,14 +38,25 @@ class Main {
 		// An HttpRequest is mutable until sent
 		// An HttpResponse is immutable
 
-		// This is a basic GET example that shows all the exposed variables
+		// // This is a basic GET example that shows all the exposed variables
+		// var request = new HttpRequest({url:"http://en.wikipedia.org/wiki/Wikipedia",
+		// 						callback:function(response:HttpResponse) {
+		// 							if (response.isOK) {
+		// 								trace('DONE (HTTP STATUS ${response.status})');
+		// 							} else {
+		// 								trace('ERROR (HTTP STATUS ${response.status})');
+		// 							}
+		// 						}
+		// 					});
+		// //request.timeout = 2;
+		// request.send();
+
 		var request = new HttpRequest({url:"http://en.wikipedia.org/wiki/Wikipedia",
 								callback:function(response:HttpResponse) {
-									if (response.isOK) {
-										trace('DONE (HTTP STATUS ${response.status})');
-									} else {
-										trace('ERROR (HTTP STATUS ${response.status})');
-									}
+									trace('DONE (HTTP STATUS ${response.status})');
+								},
+								callbackError:function(response:HttpResponse) {
+									trace('${response.error})');
 								}
 							});
 		//request.timeout = 2;
