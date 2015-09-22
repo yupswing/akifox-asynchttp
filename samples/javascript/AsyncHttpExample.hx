@@ -7,7 +7,7 @@ class AsyncHttpExample {
 	static function setContent(id,content) {
 		var d = js.Browser.document.getElementById(id);
 		if( d == null )
-		js.Lib.alert("Unknown element : "+id);
+		js.Browser.alert("Unknown element : "+id);
 		d.innerHTML = content;
 	}
 
@@ -15,9 +15,6 @@ class AsyncHttpExample {
 
 		// Force log to console (usually enabled only on -debug)
 		AsyncHttp.logEnabled = true;
-
-   		// Force not throwing errors but trace (default disabled on -debug)
-		AsyncHttp.errorSafe = true;
 
 		new HttpRequest({
 			url : "test.html",

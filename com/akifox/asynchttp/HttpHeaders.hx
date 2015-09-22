@@ -124,7 +124,7 @@ class HttpHeaders {
   **/
 	public function add(key:String,value:String):HttpHeaders {
   	if (_finalised) {
-			AsyncHttp.error('HttpHeaders ERROR: [.add()] Can\'t add an header. This HttpHeaders object is immutable');
+			AsyncHttp.error('HttpHeaders.add() -> Can\'t add an header. This HttpHeaders object is immutable');
       return this;
     }
     _headers[key] = value;
@@ -137,7 +137,7 @@ class HttpHeaders {
 	public function remove(key:String):HttpHeaders {
     if (key==null) return this;
   	if (_finalised) {
-			AsyncHttp.error('HttpHeaders ERROR: [.remove()] Can\'t remove an header. This HttpHeaders object is immutable');
+			AsyncHttp.error('HttpHeaders.remove() -> Can\'t remove an header. This HttpHeaders object is immutable');
       return this;
     }
     _headers.remove(key);

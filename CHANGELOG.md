@@ -4,6 +4,11 @@
 ## What's new 0.4.2
 
 - Minor fixes
+- Fix uncatchable exceptions in multi-threaded execution
+  - No more throwing, just log and passing response.error variable
+- Added comments to all public methods
+- Better class scope
+- Removed errorSafe, introduced logErrorEnabled
 
 ## What's new 0.4.1
 

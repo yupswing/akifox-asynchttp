@@ -90,6 +90,7 @@ using StringTools;
 		var status:Int;
 		var headers:HttpHeaders;
 		var socket:AbstractSocket;
+		var errorMessage:String;
 	}
 
 #else
@@ -153,15 +154,12 @@ class AsyncHttp
 	* (default set to true on -debug)
 	**/
 	public static var logEnabled:Bool = #if debug true #else false #end;
+	public static var logErrorEnabled:Bool = true;
 
 	/**
-	* **true**: log to console
-	*
-	* **false**: throw errors (useful to stop execution during single threaded debug phases)
-	*
-	* (default set to false on -debug)
+	* Deprecated and ignored (will be dropped in 0.5) #TODO
 	**/
-	public static var errorSafe:Bool = #if debug false #else true #end;
+	public static var errorSafe:Bool = false;
 
 	/**
 	* The HTTP User Agent string sent on request (default: 'akifox-asynchttp')
@@ -183,21 +181,23 @@ class AsyncHttp
 
 	// ==========================================================================================
 
-	// Logging trace (enabled by default on -debug)
+	// Logging trace
 	@:dox(hide)
-	public static inline function log(message:String) {
-		if (AsyncHttp.logEnabled) trace(message);
+	public static inline function log(message:String, fingerprint:String=''):String {
+		if (AsyncHttp.logEnabled) {
+			trace('${fingerprint} INFO: ${message}');
+		}
+		return message;
 	}
 
-	// Error trace (throw by default on -debug)
-	// NOTE: to be error-safe it only make traces if not -debug
+	// Error trace
 	@:dox(hide)
-	public static inline function error(message:String) {
-		if (AsyncHttp.errorSafe) {
-			trace(message);
-		} else {
-			throw message;
+	public static inline function error(message:String, fingerprint:String='', throwError:Bool=false):String {
+		if (AsyncHttp.logErrorEnabled) {
+			trace('${fingerprint} ERROR: ${message}');
 		}
+		if (throwError) throw 'AsyncHttp Error: ${message}';
+		return message;
 	}
 
 	// ==========================================================================================
@@ -215,8 +215,9 @@ class AsyncHttp
 	public function send(request:HttpRequest) {
 
 		if (request.finalised) {
-			error('${request.fingerprint} ERROR: Unable to send the request: it was already sent before\n'+
-																		'To send it again you have to clone it before.');
+			error('Unable to send the request: it was already sent before\n'+
+						'To send it again you have to clone it before.',
+						request.fingerprint, true); // throw error!
 			return;
 		}
 
@@ -269,6 +270,8 @@ class AsyncHttp
 			request = Thread.readMessage(true);
 			httpViaSocket(request);
 		} catch(error:String) {
+			// very unlikely it will fall in this case
+			// (just to be safe and don't let the sub thread crash the whole application)
 			callback(request,0.0,request.url,new HttpHeaders(),0,null,error);
 		}
 	}
@@ -277,6 +280,7 @@ class AsyncHttp
 	// (could be called more than once in case of redirects)
 	private function httpViaSocketConnect(url:URL,request:HttpRequest):Requester {
 
+		var errorMessage:String = '';
 		var headers = new HttpHeaders();
 		var status:Int = 0;
 
@@ -284,8 +288,9 @@ class AsyncHttp
 		if (url.isSsl) {
 			s = new SocketSSL();
 			#if (!php && !java && !hxssl)
-			error('${request.fingerprint} ERROR: requested HTTPS but no SSL support (fallback on HTTP)\n'+
-					'**** On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl` ****');
+			error('Requested HTTPS but no SSL support (fallback on HTTP)\n'+
+						'**** On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl` ****',
+						request.fingerprint);
 			#end
 		} else {
 			s = new SocketTCP();
@@ -295,7 +300,8 @@ class AsyncHttp
 		// -- START REQUEST
 
 		var connected = false;
-		log('${request.fingerprint} INFO: Request\n> ${request.method} ${url}');
+		log('Request\n> ${request.method} ${url}',
+				request.fingerprint);
 		try {
 			#if flash
 			s.connect(url.host, url.port);
@@ -304,7 +310,7 @@ class AsyncHttp
 			#end
 			connected = true;
 		} catch (msg:Dynamic) {
-		  error('${request.fingerprint} ERROR: Request failed -> $msg');
+		  errorMessage = error('Request failed -> $msg', request.fingerprint);
 		}
 
 		if (connected) {
@@ -314,11 +320,11 @@ class AsyncHttp
 
 			try {
 				s.output.writeString('${request.method} ${url.resource}${url.querystring} HTTP/$httpVersion\r\n');
-				log('${request.fingerprint} HTTP > ${request.method} ${url.resource}${url.querystring} HTTP/$httpVersion');
+				log('HTTP > ${request.method} ${url.resource}${url.querystring} HTTP/$httpVersion',request.fingerprint);
 				s.output.writeString('User-Agent: $userAgent\r\n');
-				log('${request.fingerprint} HTTP > User-Agent: $userAgent');
+				log('HTTP > User-Agent: $userAgent',request.fingerprint);
 				s.output.writeString('Host: ${url.host}\r\n');
-				log('${request.fingerprint} HTTP > Host: ${url.host}');
+				log('HTTP > Host: ${url.host}',request.fingerprint);
 
 				if (request.headers!=null) {
 					//custom headers
@@ -326,16 +332,16 @@ class AsyncHttp
 						var value = request.headers.get(key);
 						if (HttpHeaders.validateRequest(key)) {
 							s.output.writeString('$key: $value\r\n');
-							log('${request.fingerprint} HTTP > $key: $value');
+							log('HTTP > $key: $value',request.fingerprint);
 						}
 					}
 				}
 
 				if (request.content!=null) {
 					s.output.writeString('Content-Type: ${request.contentType}\r\n');
-					log('${request.fingerprint} HTTP > Content-Type: ${request.contentType}');
+					log('HTTP > Content-Type: ${request.contentType}',request.fingerprint);
 					s.output.writeString('Content-Length: '+request.content.length+'\r\n');
-					log('${request.fingerprint} HTTP > Content-Length: '+request.content.length);
+					log('HTTP > Content-Length: '+request.content.length,request.fingerprint);
 					s.output.writeString('\r\n');
 					if (request.contentIsBinary) {
 						s.output.writeBytes(cast(request.content,Bytes),0,request.content.length);
@@ -345,7 +351,7 @@ class AsyncHttp
 				}
 				s.output.writeString('\r\n');
 			} catch (msg:Dynamic) {
-				error('${request.fingerprint} ERROR: Request failed -> $msg');
+				errorMessage = error('Request failed -> $msg',request.fingerprint);
 				status = 0;
 				s.close();
 				s = null;
@@ -364,7 +370,7 @@ class AsyncHttp
 					ln = s.input.readLine().trim();
 				} catch(msg:Dynamic) {
 					// error (probably unexpected connection terminated)
-					error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+					errorMessage = error('Transfer failed -> $msg',request.fingerprint);
 					ln = '';
 					status = 0;
 					s.close();
@@ -387,7 +393,7 @@ class AsyncHttp
 		  // -- END RESPONSE HEADERS
 		}
 
-		return {status:status,socket:s,headers:headers};
+		return {status:status,socket:s,headers:headers,errorMessage:errorMessage};
 	}
 
 	// Ask httpViaSocketConnect to open a socket and send the request
@@ -402,6 +408,7 @@ class AsyncHttp
 		var url:URL=request.url;
 		var content:Dynamic=null;
 		var contentLength:Int=0;
+		var errorMessage:String = '';
 
 		var connected:Bool = false;
 		var redirect:Bool = false;
@@ -419,6 +426,7 @@ class AsyncHttp
 			status = req.status;
 			s = req.socket;
 			headers = req.headers;
+			errorMessage = req.errorMessage;
 			req = null;
 
 			connected = (status!=0);
@@ -435,7 +443,7 @@ class AsyncHttp
 			  			if (redirectChain.length<=maxRedirections && redirectChain.indexOf(newURL.toString())==-1) {
 								url = newURL;
 								redirectChain.push(url.toString());
-								log('${request.fingerprint} REDIRECT: $status -> ${url}');
+								log('Redirect $status -> ${url}',request.fingerprint);
 								s.close();
 								s = null;
 			  			} else {
@@ -445,11 +453,10 @@ class AsyncHttp
 								s = null;
 								connected = false;
 								if (redirectChain.length>maxRedirections) {
-									error('${request.fingerprint} ERROR: Too many redirection (Max $maxRedirections)\n'+redirectChain.join('-->'));
+									errorMessage = error('Too many redirection (Max $maxRedirections)\n'+redirectChain.join('-->'),request.fingerprint);
 								} else {
-									error('${request.fingerprint} ERROR: Redirection loop\n'+redirectChain.join('-->')+'-->'+redirectChain[0]);
+									errorMessage = error('Redirection loop\n'+redirectChain.join('-->')+'-->'+redirectChain[0],request.fingerprint);
 								}
-
 			  			}
 			  		}
 			    }
@@ -467,25 +474,23 @@ class AsyncHttp
 			var mode:HttpTransferMode = HttpTransferMode.UNDEFINED;
 			if (contentLength>0) mode = HttpTransferMode.FIXED;
 			if (headers.get('transfer-encoding') == 'chunked') mode = HttpTransferMode.CHUNKED;
-			log('${request.fingerprint} TRANSFER MODE: $mode');
+			log('Transfer mode -> $mode',request.fingerprint);
 
 			var bytes_loaded:Int = 0;
 			var contentBytes:Bytes=null;
 
 			switch(mode) {
 				case HttpTransferMode.UNDEFINED:
-
 					// UNKNOWN CONTENT LENGTH
-
 					try {
 						contentBytes = s.input.readAll();
 					} catch(msg:Dynamic) {
-						error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+						errorMessage = error('Transfer failed -> $msg',request.fingerprint);
 						status = 0;
 						contentBytes = Bytes.alloc(0);
 					}
 					contentLength = contentBytes.length;
-				  log('${request.fingerprint} LOADED: $contentLength/$contentLength bytes (100%)');
+				  log('Loaded $contentLength/$contentLength bytes (100%)',request.fingerprint);
 
 				case HttpTransferMode.FIXED:
 
@@ -503,7 +508,7 @@ class AsyncHttp
 						try {
 				      s.input.readFullBytes(contentBytes, bytes_loaded, actual_block_len);
 						} catch(msg:Dynamic) {
-							error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+							errorMessage = error('Transfer failed -> $msg',request.fingerprint);
 							status = 0;
 							contentBytes = Bytes.alloc(0);
 							break;
@@ -511,7 +516,7 @@ class AsyncHttp
 			      bytes_left -= actual_block_len;
 
 			      bytes_loaded += actual_block_len;
-			      log('${request.fingerprint} LOADED: $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)');
+			      log('Loaded $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)',request.fingerprint);
 			    }
 
 				case HttpTransferMode.CHUNKED:
@@ -530,10 +535,10 @@ class AsyncHttp
 							bytes_loaded += chunk;
 							buffer.add(bytes);
 							s.input.read(2); // \n\r between chunks = 2 bytes
-							log('${request.fingerprint} LOADED: $bytes_loaded bytes (Total unknown)');
+							log('Loaded $bytes_loaded bytes (Total unknown)',request.fingerprint);
 						}
 					} catch(msg:Dynamic) {
-						error('${request.fingerprint} ERROR: Transfer failed -> $msg');
+						errorMessage = error('Transfer failed -> $msg',request.fingerprint);
 						status = 0;
 						buffer = new haxe.io.BytesBuffer();
 					}
@@ -560,8 +565,8 @@ class AsyncHttp
 
 		var time:Float = elapsedTime(start);
 
-		log('${request.fingerprint} INFO: Response $status ($contentLength bytes in $time s)\n> ${request.method} $url');
-		this.callback(request,time,url,headers,status,content);
+		log('Response $status ($contentLength bytes in $time s)\n> ${request.method} $url',request.fingerprint);
+		this.callback(request,time,url,headers,status,content,errorMessage);
   }
 
   #elseif flash
@@ -608,8 +613,7 @@ class AsyncHttp
 
 		urlLoader.dataFormat = URLLoaderDataFormat.BINARY;//(contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 
-		log('${request.fingerprint} INFO: Request\n> ${request.method} ${request.url}');
-
+		log('Request\n> ${request.method} ${request.url}',request.fingerprint);
 		var urlRequest = new URLRequest(request.url.toString());
 		urlRequest.method = request.method;
 		if (request.content!=null && request.method != HttpMethod.GET) {
@@ -627,7 +631,7 @@ class AsyncHttp
 
 		urlLoader.addEventListener("httpStatus", function(e:HTTPStatusEvent) {
 			status = e.status;
-		    log('${request.fingerprint} INFO: Response HTTP_Status $status');
+		  log('Response HTTP_Status $status',request.fingerprint);
 			//content = null; // content will be retrive in EVENT.COMPLETE
 			//urlLoader.dataFormat = URLLoaderDataFormat.BINARY;//(contentIsBinary?URLLoaderDataFormat.BINARY:URLLoaderDataFormat.TEXT);
 			httpstatusDone = true; //flash does not call this event
@@ -638,7 +642,7 @@ class AsyncHttp
 			newUrl.merge(request.url);
 			url = newUrl;
 			status = e.status;
-		    log('${request.fingerprint} INFO: Response HTTP_Response_Status $status');
+		  log('Response HTTP_Response_Status $status',request.fingerprint);
 			try { headers = convertFromFlashHeaders(e.responseHeaders); }
 			catch (e:Dynamic) {}
 			//content = null; // content will be retrive in EVENT.COMPLETE
@@ -650,16 +654,16 @@ class AsyncHttp
 		urlLoader.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = e.errorID;
-		    var error = '${request.fingerprint} INFO: Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}';
-				this.callback(request,time,url,headers,status,content,error);
+		    var errorMessage = error('Response Error ' + e.errorID + ' ($time s)\n> ${request.method} ${request.url}',request.fingerprint);
+				this.callback(request,time,url,headers,status,content,errorMessage);
 		    urlLoader = null;
 		});
 
 		urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent) {
 		    var time = elapsedTime(start);
 		    status = 0;
-		    var error = '${request.fingerprint} INFO: Response Security Error ($time s)\n> ${request.method} ${request.url}';
-				this.callback(request,time,url,headers,status,content,error);
+		    var errorMessage = error('Response Security Error ($time s)\n> ${request.method} ${request.url}',request.fingerprint);
+				this.callback(request,time,url,headers,status,content,errorMessage);
 		    urlLoader = null;
 		});
 
@@ -668,8 +672,8 @@ class AsyncHttp
 
 		    var time = elapsedTime(start);
 		    content = Bytes.ofString(e.target.data);
-		    var error = '${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}';
-				this.callback(request,time,url,headers,status,content,error);
+		    log('Response Complete $status ($time s)\n> ${request.method} ${request.url}',request.fingerprint);
+				this.callback(request,time,url,headers,status,content);
 		    urlLoader = null;
 		});
 
@@ -677,8 +681,8 @@ class AsyncHttp
 		  	urlLoader.load(urlRequest);
 		} catch (msg:Dynamic) {
 		    var time = elapsedTime(start);
-		    var error = '${request.fingerprint} ERROR: Request failed -> $msg';
-				this.callback(request,time,url,headers,status,content,error);
+		    var errorMessage = error('Request failed -> $msg',request.fingerprint);
+				this.callback(request,time,url,headers,status,content,errorMessage);
 		    urlLoader = null;
 		}
 	}
@@ -705,22 +709,22 @@ class AsyncHttp
 		var httpstatusDone = false;
 
 		r.onError = function(msg:String) {
-	    	var error = '${request.fingerprint} ERROR: Request failed -> $msg';
+	    	var errorMessage = error('Request failed -> $msg',request.fingerprint);
 	    	var time = elapsedTime(start);
-				this.callback(request,time,url,headers,status,content,error);
+				this.callback(request,time,url,headers,status,content,errorMessage);
 		};
 
 		r.onData = function(data:String) {
 			if (!httpstatusDone) status = 200; // see onStatus below
     	var time = elapsedTime(start);
     	content = Bytes.ofString(data);
-    	log('${request.fingerprint} INFO: Response Complete $status ($time s)\n> ${request.method} ${request.url}');
+    	log('Response Complete $status ($time s)\n> ${request.method} ${request.url}',request.fingerprint);
 			this.callback(request,time,url,headers,status,content);
 		};
 
 		r.onStatus = function(http_status:Int) {
 			status = http_status;
-		  log('${request.fingerprint} INFO: Response HTTP Status $status');
+		  log('Response HTTP Status $status',request.fingerprint);
 			httpstatusDone = true; // it could not be called (so it will be set on 200 in onData if no onStatus)
 		}
 

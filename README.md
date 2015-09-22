@@ -136,9 +136,9 @@ var request = new HttpRequest({
     callback : function(response:HttpResponse):Void {
                 if (response.isOK) {
                   trace(response.content);
-                  trace('DONE (HTTP STATUS ${response.status})');
+                  trace('DONE ${response.status}');
                 } else {
-                  trace('ERROR (HTTP STATUS ${response.status})');
+                  trace('ERROR ${response.status} ${response.error}');
                 }
               }  
 });
@@ -161,8 +161,8 @@ import com.akifox.asynchttp.*;
 // Force log to console (default enabled on -debug)
 AsyncHttp.logEnabled = true;
 
-// Force not throwing errors but trace (default disabled on -debug)
-AsyncHttp.errorSafe = true;
+// Force error log to console (default enabled)
+AsyncHttp.logErrorEnabled = true;
 
 // Global custom user-agent header (default "akifox-asynchttp") [v0.4+]
 AsyncHttp.userAgent = "akifox-asynchttp";
@@ -263,7 +263,7 @@ var request = new HttpRequest({
          } else {
 
            // Any connection or status error
-           trace('ERROR (HTTP STATUS ${response.status})');
+           trace('ERROR ${response.status} ${response.error})');
 
          }
       },

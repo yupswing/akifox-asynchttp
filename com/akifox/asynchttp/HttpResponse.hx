@@ -47,6 +47,9 @@ class HttpResponse {
 		_isOK = (_status >= 200 && _status < 400);
 		_headers = headers;
 		_error = error;
+		if (!_isOK && _status!=0 ) {
+			_error = _httpStatus.get(_status);
+		}
 
 		// set content type
 		if (_headers.exists('content-type')) _contentType = _headers.get('content-type');
@@ -75,7 +78,7 @@ class HttpResponse {
 	* @returns   Debug representation of the HttpResponse instance
 	**/
 	public function toString():String {
-		return '[HttpResponse <${_request.fingerprint}> (isOK $_isOK, status $_status, $_contentLength bytes in $_time sec)]';
+		return '[HttpResponse <${_request.fingerprint}> (isOK=$_isOK, status=$_status, length=$_contentLength bytes in $_time sec), error=$_error]';
 	}
 
 	// ==========================================================================================
@@ -126,7 +129,7 @@ class HttpResponse {
 		try {
 			_contentXml = Xml.parse(toText());
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Xml -> $msg');
+			AsyncHttp.error('HttpResponse.toXml() -> $msg', _request.fingerprint);
 		}
 		return _contentXml;
 	}
@@ -141,7 +144,7 @@ class HttpResponse {
 		try {
 			_contentJson = haxe.Json.parse(toText());
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Json -> $msg');
+			AsyncHttp.error('HttpResponse.toJson() -> $msg', _request.fingerprint);
 		}
 		return _contentJson;
 	}
@@ -156,7 +159,7 @@ class HttpResponse {
 		try {
 			_contentText = Std.string(_contentRaw);
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Text -> $msg');
+			AsyncHttp.error('HttpResponse.toText() -> $msg', _request.fingerprint);
 		}
 		return _contentText;
 	}
@@ -195,7 +198,7 @@ class HttpResponse {
 			_contentBitmapData = openfl.display.BitmapData.fromBytes(bytearray);
 			#end
 		} catch( msg : Dynamic ) {
-			AsyncHttp.error('HttpResponse ${_request.fingerprint} ERROR: parse Image -> $msg');
+			AsyncHttp.error('HttpResponse.toBitmapData() -> $msg', _request.fingerprint);
 		}
 		return _contentBitmapData;
 	}
@@ -372,4 +375,61 @@ class HttpResponse {
 
 	// ==========================================================================================
 
+
+	private static var _httpStatus:Map<Int,String> =
+												 [100=>'Continue',
+													101=>'Switching Protocols',
+													102=>'Processing',
+													200=>'OK',
+													201=>'Created',
+													202=>'Accepted',
+													203=>'Non-Authoritative Information',
+													204=>'No Content',
+													205=>'Reset Content',
+													206=>'Partial Content',
+													207=>'Multi-Status',
+													300=>'Multiple Choices',
+													301=>'Moved Permanently',
+													302=>'Found',
+													303=>'See Other',
+													304=>'Not Modified',
+													305=>'Use Proxy',
+													306=>'Switch Proxy',
+													307=>'Temporary Redirect',
+													400=>'Bad Request',
+													401=>'Unauthorized',
+													402=>'Payment Required',
+													403=>'Forbidden',
+													404=>'Not Found',
+													405=>'Method Not Allowed',
+													406=>'Not Acceptable',
+													407=>'Proxy Authentication Required',
+													408=>'Request Timeout',
+													409=>'Conflict',
+													410=>'Gone',
+													411=>'Length Required',
+													412=>'Precondition Failed',
+													413=>'Request Entity Too Large',
+													414=>'Request-URI Too Long',
+													415=>'Unsupported Media Type',
+													416=>'Requested Range Not Satisfiable',
+													417=>'Expectation Failed',
+													418=>'I\'m a teapot',
+													422=>'Unprocessable Entity',
+													423=>'Locked',
+													424=>'Failed Dependency',
+													425=>'Unordered Collection',
+													426=>'Upgrade Required',
+													449=>'Retry With',
+													450=>'Blocked by Windows Parental Controls',
+													500=>'Internal Server Error',
+													501=>'Not Implemented',
+													502=>'Bad Gateway',
+													503=>'Service Unavailable',
+													504=>'Gateway Timeout',
+													505=>'HTTP Version Not Supported',
+													506=>'Variant Also Negotiates',
+													507=>'Insufficient Storage',
+													509=>'Bandwidth Limit Exceeded',
+													510=>'Not Extended'];
 }

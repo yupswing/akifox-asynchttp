@@ -1,24 +1,30 @@
-(function () { "use strict";
+(function (console) { "use strict";
+var $estr = function() { return js_Boot.__string_rec(this,''); };
+function $extend(from, fields) {
+	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
+	for (var name in fields) proto[name] = fields[name];
+	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
+	return proto;
+}
 var AsyncHttpExample = function() { };
 AsyncHttpExample.__name__ = ["AsyncHttpExample"];
 AsyncHttpExample.setContent = function(id,content) {
 	var d = window.document.getElementById(id);
-	if(d == null) js.Lib.alert("Unknown element : " + id);
+	if(d == null) js_Browser.alert("Unknown element : " + id);
 	d.innerHTML = content;
 };
 AsyncHttpExample.main = function() {
-	com.akifox.asynchttp.AsyncHttp.logEnabled = true;
-	com.akifox.asynchttp.AsyncHttp.errorSafe = true;
-	new com.akifox.asynchttp.HttpRequest({ url : "test.html", callback : function(response) {
+	com_akifox_asynchttp_AsyncHttp.logEnabled = true;
+	new com_akifox_asynchttp_HttpRequest({ url : "test.html", callback : function(response) {
 		if(response.get_isOK()) AsyncHttpExample.setContent("asynchttp-text",response.get_content()); else AsyncHttpExample.setContent("asynchttp-text","ERROR -> " + response.get_status());
 	}}).send();
-	new com.akifox.asynchttp.HttpRequest({ url : "test.xml", callback : function(response1) {
+	new com_akifox_asynchttp_HttpRequest({ url : "test.xml", callback : function(response1) {
 		if(response1.get_isOK()) {
 			AsyncHttpExample.setContent("asynchttp-xml-print",StringTools.htmlEscape(response1.get_content()));
 			AsyncHttpExample.setContent("asynchttp-xml-code",response1.get_content());
 		} else AsyncHttpExample.setContent("asynchttp-xml","ERROR -> " + response1.get_status());
 	}}).send();
-	new com.akifox.asynchttp.HttpRequest({ url : "test.js", callback : function(response2) {
+	new com_akifox_asynchttp_HttpRequest({ url : "test.js", callback : function(response2) {
 		if(response2.get_isOK()) {
 			AsyncHttpExample.setContent("asynchttp-js-print",response2.get_content());
 			AsyncHttpExample.setContent("asynchttp-js-code",response2.get_content());
@@ -38,7 +44,7 @@ EReg.prototype = {
 		return this.r.m != null;
 	}
 	,matched: function(n) {
-		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw "EReg::matched";
+		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw new js__$Boot_HaxeError("EReg::matched");
 	}
 	,__class__: EReg
 };
@@ -99,19 +105,26 @@ var List = function() {
 List.__name__ = ["List"];
 List.prototype = {
 	iterator: function() {
-		return { h : this.h, hasNext : function() {
-			return this.h != null;
-		}, next : function() {
-			if(this.h == null) return null;
-			var x = this.h[0];
-			this.h = this.h[1];
-			return x;
-		}};
+		return new _$List_ListIterator(this.h);
 	}
 	,__class__: List
 };
-var IMap = function() { };
-IMap.__name__ = ["IMap"];
+var _$List_ListIterator = function(head) {
+	this.head = head;
+	this.val = null;
+};
+_$List_ListIterator.__name__ = ["_List","ListIterator"];
+_$List_ListIterator.prototype = {
+	hasNext: function() {
+		return this.head != null;
+	}
+	,next: function() {
+		this.val = this.head[0];
+		this.head = this.head[1];
+		return this.val;
+	}
+	,__class__: _$List_ListIterator
+};
 Math.__name__ = ["Math"];
 var Reflect = function() { };
 Reflect.__name__ = ["Reflect"];
@@ -132,7 +145,7 @@ Reflect.fields = function(o) {
 var Std = function() { };
 Std.__name__ = ["Std"];
 Std.string = function(s) {
-	return js.Boot.__string_rec(s,"");
+	return js_Boot.__string_rec(s,"");
 };
 Std["int"] = function(x) {
 	return x | 0;
@@ -174,129 +187,131 @@ StringTools.fastCodeAt = function(s,index) {
 var Type = function() { };
 Type.__name__ = ["Type"];
 Type.getClass = function(o) {
-	if(o == null) return null;
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+	if(o == null) return null; else return js_Boot.getClass(o);
 };
 Type.getClassName = function(c) {
 	var a = c.__name__;
+	if(a == null) return null;
 	return a.join(".");
 };
-var XmlType = { __ename__ : true, __constructs__ : [] };
-var Xml = function() {
+var Xml = function(nodeType) {
+	this.nodeType = nodeType;
+	this.children = [];
+	this.attributeMap = new haxe_ds_StringMap();
 };
 Xml.__name__ = ["Xml"];
 Xml.parse = function(str) {
-	return haxe.xml.Parser.parse(str);
+	return haxe_xml_Parser.parse(str);
 };
 Xml.createElement = function(name) {
-	var r = new Xml();
-	r.nodeType = Xml.Element;
-	r._children = new Array();
-	r._attributes = new haxe.ds.StringMap();
-	r.set_nodeName(name);
-	return r;
+	var xml = new Xml(Xml.Element);
+	if(xml.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + xml.nodeType);
+	xml.nodeName = name;
+	return xml;
 };
 Xml.createPCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.PCData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.PCData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.CData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.CData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createComment = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.Comment;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.Comment);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocType = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.DocType;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.DocType);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createProcessingInstruction = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.ProcessingInstruction;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.ProcessingInstruction);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocument = function() {
-	var r = new Xml();
-	r.nodeType = Xml.Document;
-	r._children = new Array();
-	return r;
+	return new Xml(Xml.Document);
 };
 Xml.prototype = {
-	get_nodeName: function() {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName;
-	}
-	,set_nodeName: function(n) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName = n;
-	}
-	,set_nodeValue: function(v) {
-		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-		return this._nodeValue = v;
-	}
-	,set: function(att,value) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		this._attributes.set(att,value);
+	set: function(att,value) {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		this.attributeMap.set(att,value);
 	}
 	,exists: function(att) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._attributes.exists(att);
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		return this.attributeMap.exists(att);
 	}
 	,addChild: function(x) {
-		if(this._children == null) throw "bad nodetype";
-		if(x._parent != null) HxOverrides.remove(x._parent._children,x);
-		x._parent = this;
-		this._children.push(x);
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		if(x.parent != null) x.parent.removeChild(x);
+		this.children.push(x);
+		x.parent = this;
+	}
+	,removeChild: function(x) {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		if(HxOverrides.remove(this.children,x)) {
+			x.parent = null;
+			return true;
+		}
+		return false;
 	}
 	,__class__: Xml
-	,__properties__: {set_nodeValue:"set_nodeValue",set_nodeName:"set_nodeName",get_nodeName:"get_nodeName"}
 };
-var com = {};
-com.akifox = {};
-com.akifox.asynchttp = {};
-com.akifox.asynchttp._AsyncHttp = {};
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode = { __ename__ : true, __constructs__ : ["UNDEFINED","FIXED","CHUNKED"] };
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.UNDEFINED = ["UNDEFINED",0];
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.UNDEFINED.__enum__ = com.akifox.asynchttp._AsyncHttp.HttpTransferMode;
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.FIXED = ["FIXED",1];
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.FIXED.__enum__ = com.akifox.asynchttp._AsyncHttp.HttpTransferMode;
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.CHUNKED = ["CHUNKED",2];
-com.akifox.asynchttp._AsyncHttp.HttpTransferMode.CHUNKED.__enum__ = com.akifox.asynchttp._AsyncHttp.HttpTransferMode;
-com.akifox.asynchttp.ContentKind = { __ename__ : true, __constructs__ : ["XML","JSON","IMAGE","TEXT","BYTES"] };
-com.akifox.asynchttp.ContentKind.XML = ["XML",0];
-com.akifox.asynchttp.ContentKind.XML.__enum__ = com.akifox.asynchttp.ContentKind;
-com.akifox.asynchttp.ContentKind.JSON = ["JSON",1];
-com.akifox.asynchttp.ContentKind.JSON.__enum__ = com.akifox.asynchttp.ContentKind;
-com.akifox.asynchttp.ContentKind.IMAGE = ["IMAGE",2];
-com.akifox.asynchttp.ContentKind.IMAGE.__enum__ = com.akifox.asynchttp.ContentKind;
-com.akifox.asynchttp.ContentKind.TEXT = ["TEXT",3];
-com.akifox.asynchttp.ContentKind.TEXT.__enum__ = com.akifox.asynchttp.ContentKind;
-com.akifox.asynchttp.ContentKind.BYTES = ["BYTES",4];
-com.akifox.asynchttp.ContentKind.BYTES.__enum__ = com.akifox.asynchttp.ContentKind;
-com.akifox.asynchttp.AsyncHttp = function() {
+var com_akifox_asynchttp__$AsyncHttp_HttpTransferMode = { __ename__ : true, __constructs__ : ["UNDEFINED","FIXED","CHUNKED"] };
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.UNDEFINED = ["UNDEFINED",0];
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.UNDEFINED.toString = $estr;
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.UNDEFINED.__enum__ = com_akifox_asynchttp__$AsyncHttp_HttpTransferMode;
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.FIXED = ["FIXED",1];
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.FIXED.toString = $estr;
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.FIXED.__enum__ = com_akifox_asynchttp__$AsyncHttp_HttpTransferMode;
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.CHUNKED = ["CHUNKED",2];
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.CHUNKED.toString = $estr;
+com_akifox_asynchttp__$AsyncHttp_HttpTransferMode.CHUNKED.__enum__ = com_akifox_asynchttp__$AsyncHttp_HttpTransferMode;
+var com_akifox_asynchttp_ContentKind = { __ename__ : true, __constructs__ : ["XML","JSON","IMAGE","TEXT","BYTES"] };
+com_akifox_asynchttp_ContentKind.XML = ["XML",0];
+com_akifox_asynchttp_ContentKind.XML.toString = $estr;
+com_akifox_asynchttp_ContentKind.XML.__enum__ = com_akifox_asynchttp_ContentKind;
+com_akifox_asynchttp_ContentKind.JSON = ["JSON",1];
+com_akifox_asynchttp_ContentKind.JSON.toString = $estr;
+com_akifox_asynchttp_ContentKind.JSON.__enum__ = com_akifox_asynchttp_ContentKind;
+com_akifox_asynchttp_ContentKind.IMAGE = ["IMAGE",2];
+com_akifox_asynchttp_ContentKind.IMAGE.toString = $estr;
+com_akifox_asynchttp_ContentKind.IMAGE.__enum__ = com_akifox_asynchttp_ContentKind;
+com_akifox_asynchttp_ContentKind.TEXT = ["TEXT",3];
+com_akifox_asynchttp_ContentKind.TEXT.toString = $estr;
+com_akifox_asynchttp_ContentKind.TEXT.__enum__ = com_akifox_asynchttp_ContentKind;
+com_akifox_asynchttp_ContentKind.BYTES = ["BYTES",4];
+com_akifox_asynchttp_ContentKind.BYTES.toString = $estr;
+com_akifox_asynchttp_ContentKind.BYTES.__enum__ = com_akifox_asynchttp_ContentKind;
+var com_akifox_asynchttp_AsyncHttp = function() {
 };
-com.akifox.asynchttp.AsyncHttp.__name__ = ["com","akifox","asynchttp","AsyncHttp"];
-com.akifox.asynchttp.AsyncHttp.log = function(message) {
-	if(com.akifox.asynchttp.AsyncHttp.logEnabled) console.log(message);
+com_akifox_asynchttp_AsyncHttp.__name__ = ["com","akifox","asynchttp","AsyncHttp"];
+com_akifox_asynchttp_AsyncHttp.log = function(message,fingerprint) {
+	if(fingerprint == null) fingerprint = "";
+	if(com_akifox_asynchttp_AsyncHttp.logEnabled) console.log("" + fingerprint + " INFO: " + message);
+	return message;
 };
-com.akifox.asynchttp.AsyncHttp.error = function(message) {
-	if(com.akifox.asynchttp.AsyncHttp.errorSafe) console.log(message); else throw message;
+com_akifox_asynchttp_AsyncHttp.error = function(message,fingerprint,throwError) {
+	if(throwError == null) throwError = false;
+	if(fingerprint == null) fingerprint = "";
+	if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + fingerprint + " ERROR: " + message);
+	if(throwError) throw new js__$Boot_HaxeError("AsyncHttp Error: " + message);
+	return message;
 };
-com.akifox.asynchttp.AsyncHttp.determineContentKind = function(contentType) {
-	var contentKind = com.akifox.asynchttp.ContentKind.BYTES;
+com_akifox_asynchttp_AsyncHttp.determineContentKind = function(contentType) {
+	var contentKind = com_akifox_asynchttp_ContentKind.BYTES;
 	var _g = 0;
-	var _g1 = com.akifox.asynchttp.AsyncHttp.CONTENT_KIND_MATCHES;
+	var _g1 = com_akifox_asynchttp_AsyncHttp.CONTENT_KIND_MATCHES;
 	while(_g < _g1.length) {
 		var el = _g1[_g];
 		++_g;
@@ -307,62 +322,63 @@ com.akifox.asynchttp.AsyncHttp.determineContentKind = function(contentType) {
 	}
 	return contentKind;
 };
-com.akifox.asynchttp.AsyncHttp.determineIsBinary = function(contentKind) {
-	if(contentKind == com.akifox.asynchttp.ContentKind.BYTES || contentKind == com.akifox.asynchttp.ContentKind.IMAGE) return true;
+com_akifox_asynchttp_AsyncHttp.determineIsBinary = function(contentKind) {
+	if(contentKind == com_akifox_asynchttp_ContentKind.BYTES || contentKind == com_akifox_asynchttp_ContentKind.IMAGE) return true;
 	return false;
 };
-com.akifox.asynchttp.AsyncHttp.prototype = {
+com_akifox_asynchttp_AsyncHttp.prototype = {
 	send: function(request) {
 		if(request.get_finalised()) {
-			com.akifox.asynchttp.AsyncHttp.error("" + request.get_fingerprint() + " ERROR: Unable to send the request: it was already sent before\n" + "To send it again you have to clone it before.");
+			com_akifox_asynchttp_AsyncHttp.error("Unable to send the request: it was already sent before\n" + "To send it again you have to clone it before.",request.get_fingerprint(),true);
 			return;
 		}
 		request.finalise();
 		this.httpViaHaxeHttp(request);
 	}
-	,callback: function(request,time,url,headers,status,content) {
+	,callback: function(request,time,url,headers,status,content,error) {
+		if(error == null) error = "";
 		headers.finalise();
-		var response = new com.akifox.asynchttp.HttpResponse(request,time,url,headers,status,content);
+		var response = new com_akifox_asynchttp_HttpResponse(request,time,url,headers,status,content,error);
 		if(request.get_callbackError() != null && !response.get_isOK()) (request.get_callbackError())(response); else if(request.get_callback() != null) (request.get_callback())(response);
 		response = null;
 	}
 	,httpViaHaxeHttp: function(request) {
 		var _g = this;
 		if(request == null) return;
-		var start = haxe.Timer.stamp();
+		var start = haxe_Timer.stamp();
 		var url = request.get_url();
 		var status = 0;
-		var headers = new com.akifox.asynchttp.HttpHeaders();
+		var headers = new com_akifox_asynchttp_HttpHeaders();
 		var content = null;
-		var r = new haxe.Http(url.toString());
+		var r = new haxe_Http(url.toString());
 		r.async = request.get_async();
 		if(request.get_content() != null) r.setPostData(Std.string(request.get_content()));
 		var httpstatusDone = false;
 		r.onError = function(msg) {
-			com.akifox.asynchttp.AsyncHttp.error("" + request.get_fingerprint() + " ERROR: Request failed -> " + msg);
+			var errorMessage = com_akifox_asynchttp_AsyncHttp.error("Request failed -> " + msg,request.get_fingerprint(),null);
 			var time = _g.elapsedTime(start);
-			_g.callback(request,time,url,headers,status,content);
+			_g.callback(request,time,url,headers,status,content,errorMessage);
 		};
 		r.onData = function(data) {
 			if(!httpstatusDone) status = 200;
 			var time1 = _g.elapsedTime(start);
-			content = haxe.io.Bytes.ofString(data);
-			com.akifox.asynchttp.AsyncHttp.log("" + request.get_fingerprint() + " INFO: Response Complete " + status + " (" + time1 + " s)\n> " + request.get_method() + " " + Std.string(request.get_url()));
-			_g.callback(request,time1,url,headers,status,content);
+			content = haxe_io_Bytes.ofString(data);
+			com_akifox_asynchttp_AsyncHttp.log("Response Complete " + status + " (" + time1 + " s)\n> " + request.get_method() + " " + Std.string(request.get_url()),request.get_fingerprint());
+			_g.callback(request,time1,url,headers,status,content,null);
 		};
 		r.onStatus = function(http_status) {
 			status = http_status;
-			com.akifox.asynchttp.AsyncHttp.log("" + request.get_fingerprint() + " INFO: Response HTTP Status " + status);
+			com_akifox_asynchttp_AsyncHttp.log("Response HTTP Status " + status,request.get_fingerprint());
 			httpstatusDone = true;
 		};
 		r.request(request.get_content() != null);
 	}
 	,elapsedTime: function(start) {
-		return Std["int"]((haxe.Timer.stamp() - start) * 1000) / 1000;
+		return Std["int"]((haxe_Timer.stamp() - start) * 1000) / 1000;
 	}
 	,randomUID: function(size) {
 		if(size == null) size = 32;
-		var nchars = com.akifox.asynchttp.AsyncHttp.UID_CHARS.length;
+		var nchars = com_akifox_asynchttp_AsyncHttp.UID_CHARS.length;
 		var uid = new StringBuf();
 		var _g = 0;
 		while(_g < size) {
@@ -370,26 +386,26 @@ com.akifox.asynchttp.AsyncHttp.prototype = {
 			uid.addChar((function($this) {
 				var $r;
 				var index = Std.random(nchars);
-				$r = HxOverrides.cca(com.akifox.asynchttp.AsyncHttp.UID_CHARS,index);
+				$r = HxOverrides.cca(com_akifox_asynchttp_AsyncHttp.UID_CHARS,index);
 				return $r;
 			}(this)));
 		}
 		return uid.b;
 	}
-	,__class__: com.akifox.asynchttp.AsyncHttp
+	,__class__: com_akifox_asynchttp_AsyncHttp
 };
-com.akifox.asynchttp.HttpHeaders = function(headers) {
+var com_akifox_asynchttp_HttpHeaders = function(headers) {
 	this._finalised = false;
-	this._headers = new haxe.ds.StringMap();
+	this._headers = new haxe_ds_StringMap();
 	if(headers == null) return;
 	console.log(Type.getClassName(Type.getClass(headers)));
 	var _g = Type.getClassName(Type.getClass(headers));
 	switch(_g) {
 	case "com.akifox.asynchttp.HttpHeaders":case "HttpHeaders":
-		var $it0 = (js.Boot.__cast(headers , com.akifox.asynchttp.HttpHeaders)).keys();
+		var $it0 = (js_Boot.__cast(headers , com_akifox_asynchttp_HttpHeaders)).keys();
 		while( $it0.hasNext() ) {
 			var key = $it0.next();
-			this.add(key,(js.Boot.__cast(headers , com.akifox.asynchttp.HttpHeaders)).get(key));
+			this.add(key,(js_Boot.__cast(headers , com_akifox_asynchttp_HttpHeaders)).get(key));
 		}
 		break;
 	default:
@@ -403,18 +419,18 @@ com.akifox.asynchttp.HttpHeaders = function(headers) {
 		}
 	}
 };
-com.akifox.asynchttp.HttpHeaders.__name__ = ["com","akifox","asynchttp","HttpHeaders"];
-com.akifox.asynchttp.HttpHeaders.validateRequest = function(header) {
+com_akifox_asynchttp_HttpHeaders.__name__ = ["com","akifox","asynchttp","HttpHeaders"];
+com_akifox_asynchttp_HttpHeaders.validateRequest = function(header) {
 	if(header == null) return false;
 	if((function($this) {
 		var $r;
 		var x = header.toLowerCase();
-		$r = HxOverrides.indexOf(com.akifox.asynchttp.HttpHeaders.FORBIDDEN_ON_REQUEST,x,0);
+		$r = HxOverrides.indexOf(com_akifox_asynchttp_HttpHeaders.FORBIDDEN_ON_REQUEST,x,0);
 		return $r;
 	}(this)) >= 0) return false;
 	return true;
 };
-com.akifox.asynchttp.HttpHeaders.prototype = {
+com_akifox_asynchttp_HttpHeaders.prototype = {
 	get_finalised: function() {
 		return this._finalised;
 	}
@@ -422,7 +438,7 @@ com.akifox.asynchttp.HttpHeaders.prototype = {
 		return "[HttpHeaders <" + this._headers.toString() + ">]";
 	}
 	,clone: function() {
-		return new com.akifox.asynchttp.HttpHeaders(this);
+		return new com_akifox_asynchttp_HttpHeaders(this);
 	}
 	,finalise: function() {
 		this._finalised = true;
@@ -439,32 +455,36 @@ com.akifox.asynchttp.HttpHeaders.prototype = {
 	}
 	,add: function(key,value) {
 		if(this._finalised) {
-			if(com.akifox.asynchttp.AsyncHttp.errorSafe) console.log("HttpHeaders ERROR: [.add()] Can't add an header. This HttpHeaders object is immutable"); else throw "HttpHeaders ERROR: [.add()] Can't add an header. This HttpHeaders object is immutable";
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + "" + " ERROR: " + "HttpHeaders.add() -> Can't add an header. This HttpHeaders object is immutable");
+			"HttpHeaders.add() -> Can't add an header. This HttpHeaders object is immutable";
 			return this;
 		}
-		this._headers.set(key,value);
-		value;
+		{
+			this._headers.set(key,value);
+			value;
+		}
 		return this;
 	}
 	,remove: function(key) {
 		if(key == null) return this;
 		if(this._finalised) {
-			if(com.akifox.asynchttp.AsyncHttp.errorSafe) console.log("HttpHeaders ERROR: [.remove()] Can't remove an header. This HttpHeaders object is immutable"); else throw "HttpHeaders ERROR: [.remove()] Can't remove an header. This HttpHeaders object is immutable";
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + "" + " ERROR: " + "HttpHeaders.remove() -> Can't remove an header. This HttpHeaders object is immutable");
+			"HttpHeaders.remove() -> Can't remove an header. This HttpHeaders object is immutable";
 			return this;
 		}
 		this._headers.remove(key);
 		return this;
 	}
-	,__class__: com.akifox.asynchttp.HttpHeaders
+	,__class__: com_akifox_asynchttp_HttpHeaders
 	,__properties__: {get_finalised:"get_finalised"}
 };
-com.akifox.asynchttp.HttpMethod = function() { };
-com.akifox.asynchttp.HttpMethod.__name__ = ["com","akifox","asynchttp","HttpMethod"];
-com.akifox.asynchttp.HttpMethod.validate = function(value) {
-	if(value == null || HxOverrides.indexOf(com.akifox.asynchttp.HttpMethod.METHODS,value,0) == -1) value = "GET";
+var com_akifox_asynchttp_HttpMethod = function() { };
+com_akifox_asynchttp_HttpMethod.__name__ = ["com","akifox","asynchttp","HttpMethod"];
+com_akifox_asynchttp_HttpMethod.validate = function(value) {
+	if(value == null || HxOverrides.indexOf(com_akifox_asynchttp_HttpMethod.METHODS,value,0) == -1) value = "GET";
 	return value;
 };
-com.akifox.asynchttp.HttpRequest = function(options) {
+var com_akifox_asynchttp_HttpRequest = function(options) {
 	this._callbackError = null;
 	this._callback = null;
 	this._contentIsBinary = false;
@@ -475,9 +495,9 @@ com.akifox.asynchttp.HttpRequest = function(options) {
 	this._http11 = true;
 	this._async = true;
 	this._timeout = 10;
-	this._headers = new com.akifox.asynchttp.HttpHeaders();
+	this._headers = new com_akifox_asynchttp_HttpHeaders();
 	this._finalised = false;
-	this._fingerprint = new com.akifox.asynchttp.AsyncHttp().randomUID(8);
+	this._fingerprint = new com_akifox_asynchttp_AsyncHttp().randomUID(8);
 	if(options != null) {
 		if(options.async != null) this.set_async(options.async);
 		if(options.http11 != null) this.set_http11(options.http11);
@@ -492,8 +512,8 @@ com.akifox.asynchttp.HttpRequest = function(options) {
 		if(options.contentIsBinary != null) this.set_contentIsBinary(options.contentIsBinary);
 	}
 };
-com.akifox.asynchttp.HttpRequest.__name__ = ["com","akifox","asynchttp","HttpRequest"];
-com.akifox.asynchttp.HttpRequest.prototype = {
+com_akifox_asynchttp_HttpRequest.__name__ = ["com","akifox","asynchttp","HttpRequest"];
+com_akifox_asynchttp_HttpRequest.prototype = {
 	get_finalised: function() {
 		return this._finalised;
 	}
@@ -501,14 +521,14 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 		return "[HttpRequest <" + this._fingerprint + "> (" + this._method + " " + Std.string(this._url) + ")]";
 	}
 	,clone: function() {
-		return new com.akifox.asynchttp.HttpRequest({ async : this._async, http11 : this._http11, url : this._url, callback : this._callback, headers : this._headers, timeout : this._timeout, method : this._method, content : this._content, contentType : this._contentType, contentIsBinary : this._contentIsBinary});
+		return new com_akifox_asynchttp_HttpRequest({ async : this._async, http11 : this._http11, url : this._url, callback : this._callback, headers : this._headers, timeout : this._timeout, method : this._method, content : this._content, contentType : this._contentType, contentIsBinary : this._contentIsBinary});
 	}
 	,finalise: function() {
 		this._headers.finalise();
 		this._finalised = true;
 	}
 	,send: function() {
-		new com.akifox.asynchttp.AsyncHttp().send(this);
+		new com_akifox_asynchttp_AsyncHttp().send(this);
 	}
 	,get_fingerprint: function() {
 		return this._fingerprint;
@@ -518,7 +538,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_headers: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.headers] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.headers -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.headers -> Can't modify a property when the instance is already sent");
+			"HttpRequest.headers -> Can't modify a property when the instance is already sent";
 			return this._headers;
 		}
 		return this._headers = value;
@@ -528,7 +550,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_timeout: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.timeout] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.timeout -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.timeout -> Can't modify a property when the instance is already sent");
+			"HttpRequest.timeout -> Can't modify a property when the instance is already sent";
 			return this._timeout;
 		}
 		if(value < 1) value = 1;
@@ -539,7 +563,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_async: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.async] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.async -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.async -> Can't modify a property when the instance is already sent");
+			"HttpRequest.async -> Can't modify a property when the instance is already sent";
 			return this._async;
 		}
 		return this._async = value;
@@ -549,7 +575,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_http11: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.http11] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.http11 -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.http11 -> Can't modify a property when the instance is already sent");
+			"HttpRequest.http11 -> Can't modify a property when the instance is already sent";
 			return this._http11;
 		}
 		return this._http11 = value;
@@ -562,17 +590,21 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 		var _g = Type.getClassName(Type.getClass(value));
 		switch(_g) {
 		case "String":
-			v = new com.akifox.asynchttp.URL(value);
+			v = new com_akifox_asynchttp_URL(value);
 			break;
 		case "com.akifox.asynchttp.URL":case "URL":
 			v = value.clone();
 			break;
 		default:
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.url] Please specify an URL Object or a String");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.url -> Please specify an URL Object or a String");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.url -> Please specify an URL Object or a String");
+			"HttpRequest.url -> Please specify an URL Object or a String";
 			return this._url;
 		}
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.url] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.url -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.url -> Can't modify a property when the instance is already sent");
+			"HttpRequest.url -> Can't modify a property when the instance is already sent";
 			return this._url;
 		}
 		return this._url = v;
@@ -582,10 +614,12 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_method: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.method] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.method -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.method -> Can't modify a property when the instance is already sent");
+			"HttpRequest.method -> Can't modify a property when the instance is already sent";
 			return this._method;
 		}
-		value = com.akifox.asynchttp.HttpMethod.validate(value);
+		value = com_akifox_asynchttp_HttpMethod.validate(value);
 		return this._method = value;
 	}
 	,get_content: function() {
@@ -593,7 +627,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_content: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.content] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.content -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.content -> Can't modify a property when the instance is already sent");
+			"HttpRequest.content -> Can't modify a property when the instance is already sent";
 			return this._content;
 		}
 		return this._content = value;
@@ -603,11 +639,13 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_contentType: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.contentType] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.contentType -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.contentType -> Can't modify a property when the instance is already sent");
+			"HttpRequest.contentType -> Can't modify a property when the instance is already sent";
 			return this._contentType;
 		}
 		if(value == null) value = "application/x-www-form-urlencoded";
-		this._contentIsBinary = com.akifox.asynchttp.AsyncHttp.determineIsBinary(com.akifox.asynchttp.AsyncHttp.determineContentKind(value));
+		this._contentIsBinary = com_akifox_asynchttp_AsyncHttp.determineIsBinary(com_akifox_asynchttp_AsyncHttp.determineContentKind(value));
 		return this._contentType = value;
 	}
 	,get_contentIsBinary: function() {
@@ -615,7 +653,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_contentIsBinary: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.contentIsBinary] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.contentIsBinary -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.contentIsBinary -> Can't modify a property when the instance is already sent");
+			"HttpRequest.contentIsBinary -> Can't modify a property when the instance is already sent";
 			return this._contentIsBinary;
 		}
 		return this._contentIsBinary = value;
@@ -625,7 +665,9 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_callback: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.callback] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.callback -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.callback -> Can't modify a property when the instance is already sent");
+			"HttpRequest.callback -> Can't modify a property when the instance is already sent";
 			return this._callback;
 		}
 		return this._callback = value;
@@ -635,15 +677,18 @@ com.akifox.asynchttp.HttpRequest.prototype = {
 	}
 	,set_callbackError: function(value) {
 		if(this._finalised) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpRequest " + this._fingerprint + " ERROR: [.callbackError] Can't modify a property when the instance is already sent");
+			if(com_akifox_asynchttp_AsyncHttp.logErrorEnabled) console.log("" + this._fingerprint + " ERROR: " + "HttpRequest.callbackError -> Can't modify a property when the instance is already sent");
+			throw new js__$Boot_HaxeError("AsyncHttp Error: " + "HttpRequest.callbackError -> Can't modify a property when the instance is already sent");
+			"HttpRequest.callbackError -> Can't modify a property when the instance is already sent";
 			return this._callbackError;
 		}
 		return this._callbackError = value;
 	}
-	,__class__: com.akifox.asynchttp.HttpRequest
+	,__class__: com_akifox_asynchttp_HttpRequest
 	,__properties__: {set_callbackError:"set_callbackError",get_callbackError:"get_callbackError",set_callback:"set_callback",get_callback:"get_callback",set_contentIsBinary:"set_contentIsBinary",get_contentIsBinary:"get_contentIsBinary",set_contentType:"set_contentType",get_contentType:"get_contentType",set_content:"set_content",get_content:"get_content",set_method:"set_method",get_method:"get_method",set_url:"set_url",get_url:"get_url",set_http11:"set_http11",get_http11:"get_http11",set_async:"set_async",get_async:"get_async",set_timeout:"set_timeout",get_timeout:"get_timeout",get_headers:"get_headers",get_fingerprint:"get_fingerprint",get_finalised:"get_finalised"}
 };
-com.akifox.asynchttp.HttpResponse = function(request,time,url,headers,status,content) {
+var com_akifox_asynchttp_HttpResponse = function(request,time,url,headers,status,content,error) {
+	this._error = null;
 	this._filename = null;
 	this._request = request;
 	this._time = time;
@@ -651,18 +696,20 @@ com.akifox.asynchttp.HttpResponse = function(request,time,url,headers,status,con
 	this._status = status;
 	this._isOK = this._status >= 200 && this._status < 400;
 	this._headers = headers;
+	this._error = error;
+	if(!this._isOK && this._status != 0) this._error = com_akifox_asynchttp_HttpResponse._httpStatus.h[this._status];
 	if(this._headers.exists("content-type")) this._contentType = this._headers.get("content-type"); else this._contentType = "text/plain";
-	this._contentKind = com.akifox.asynchttp.AsyncHttp.determineContentKind(this._contentType);
-	this._contentIsBinary = com.akifox.asynchttp.AsyncHttp.determineIsBinary(this._contentKind);
+	this._contentKind = com_akifox_asynchttp_AsyncHttp.determineContentKind(this._contentType);
+	this._contentIsBinary = com_akifox_asynchttp_AsyncHttp.determineIsBinary(this._contentKind);
 	this._contentRaw = content;
 	if(!this._contentIsBinary) this._content = this.toText(); else this._content = this._contentRaw;
 	this._contentLength = 0;
 	if(this._headers.exists("content-length")) this._contentLength = Std.parseInt(this._headers.get("content-length")); else if(content != null) this._contentLength = this._content.length;
 };
-com.akifox.asynchttp.HttpResponse.__name__ = ["com","akifox","asynchttp","HttpResponse"];
-com.akifox.asynchttp.HttpResponse.prototype = {
+com_akifox_asynchttp_HttpResponse.__name__ = ["com","akifox","asynchttp","HttpResponse"];
+com_akifox_asynchttp_HttpResponse.prototype = {
 	toString: function() {
-		return "[HttpResponse <" + this._request.get_fingerprint() + "> (isOK " + Std.string(this._isOK) + ", status " + this._status + ", " + this._contentLength + " bytes in " + this._time + " sec)]";
+		return "[HttpResponse <" + this._request.get_fingerprint() + "> (isOK=" + Std.string(this._isOK) + ", status=" + this._status + ", length=" + this._contentLength + " bytes in " + this._time + " sec), error=" + this._error + "]";
 	}
 	,get_isBinary: function() {
 		return this._contentIsBinary;
@@ -671,20 +718,21 @@ com.akifox.asynchttp.HttpResponse.prototype = {
 		return !this._contentIsBinary;
 	}
 	,get_isXml: function() {
-		return this._contentKind == com.akifox.asynchttp.ContentKind.XML;
+		return this._contentKind == com_akifox_asynchttp_ContentKind.XML;
 	}
 	,get_isJson: function() {
-		return this._contentKind == com.akifox.asynchttp.ContentKind.JSON;
+		return this._contentKind == com_akifox_asynchttp_ContentKind.JSON;
 	}
 	,get_isImage: function() {
-		return this._contentKind == com.akifox.asynchttp.ContentKind.IMAGE;
+		return this._contentKind == com_akifox_asynchttp_ContentKind.IMAGE;
 	}
 	,toXml: function() {
 		var _contentXml = null;
 		try {
 			_contentXml = Xml.parse(this.toText());
 		} catch( msg ) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpResponse " + this._request.get_fingerprint() + " ERROR: parse Xml -> " + Std.string(msg));
+			if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
+			com_akifox_asynchttp_AsyncHttp.error("HttpResponse.toXml() -> " + Std.string(msg),this._request.get_fingerprint(),null);
 		}
 		return _contentXml;
 	}
@@ -693,7 +741,8 @@ com.akifox.asynchttp.HttpResponse.prototype = {
 		try {
 			_contentJson = JSON.parse(this.toText());
 		} catch( msg ) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpResponse " + this._request.get_fingerprint() + " ERROR: parse Json -> " + Std.string(msg));
+			if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
+			com_akifox_asynchttp_AsyncHttp.error("HttpResponse.toJson() -> " + Std.string(msg),this._request.get_fingerprint(),null);
 		}
 		return _contentJson;
 	}
@@ -702,7 +751,8 @@ com.akifox.asynchttp.HttpResponse.prototype = {
 		try {
 			_contentText = Std.string(this._contentRaw);
 		} catch( msg ) {
-			com.akifox.asynchttp.AsyncHttp.error("HttpResponse " + this._request.get_fingerprint() + " ERROR: parse Text -> " + Std.string(msg));
+			if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
+			com_akifox_asynchttp_AsyncHttp.error("HttpResponse.toText() -> " + Std.string(msg),this._request.get_fingerprint(),null);
 		}
 		return _contentText;
 	}
@@ -755,10 +805,13 @@ com.akifox.asynchttp.HttpResponse.prototype = {
 	,get_isOK: function() {
 		return this._isOK;
 	}
-	,__class__: com.akifox.asynchttp.HttpResponse
-	,__properties__: {get_isOK:"get_isOK",get_filename:"get_filename",get_time:"get_time",get_contentLength:"get_contentLength",get_contentIsBinary:"get_contentIsBinary",get_contentType:"get_contentType",get_contentRaw:"get_contentRaw",get_content:"get_content",get_status:"get_status",get_headers:"get_headers",get_urlString:"get_urlString",get_url:"get_url",get_fingerprint:"get_fingerprint",get_request:"get_request",get_isImage:"get_isImage",get_isJson:"get_isJson",get_isXml:"get_isXml",get_isText:"get_isText",get_isBinary:"get_isBinary"}
+	,get_error: function() {
+		return this._error;
+	}
+	,__class__: com_akifox_asynchttp_HttpResponse
+	,__properties__: {get_error:"get_error",get_isOK:"get_isOK",get_filename:"get_filename",get_time:"get_time",get_contentLength:"get_contentLength",get_contentIsBinary:"get_contentIsBinary",get_contentType:"get_contentType",get_contentRaw:"get_contentRaw",get_content:"get_content",get_status:"get_status",get_headers:"get_headers",get_urlString:"get_urlString",get_url:"get_url",get_fingerprint:"get_fingerprint",get_request:"get_request",get_isImage:"get_isImage",get_isJson:"get_isJson",get_isXml:"get_isXml",get_isText:"get_isText",get_isBinary:"get_isBinary"}
 };
-com.akifox.asynchttp.URL = function(urlString) {
+var com_akifox_asynchttp_URL = function(urlString) {
 	this._querystring = "";
 	this._resource = "";
 	this._port = "";
@@ -781,13 +834,13 @@ com.akifox.asynchttp.URL = function(urlString) {
 		if(this._querystring == null) this._querystring = "";
 	}
 };
-com.akifox.asynchttp.URL.__name__ = ["com","akifox","asynchttp","URL"];
-com.akifox.asynchttp.URL.prototype = {
+com_akifox_asynchttp_URL.__name__ = ["com","akifox","asynchttp","URL"];
+com_akifox_asynchttp_URL.prototype = {
 	toString: function() {
 		return "" + this.get_protocol() + this._host + this._port + this._resource + this._querystring;
 	}
 	,clone: function() {
-		return new com.akifox.asynchttp.URL(this.toString());
+		return new com_akifox_asynchttp_URL(this.toString());
 	}
 	,merge: function(url) {
 		if(this._protocol == "") this._protocol = url._protocol;
@@ -853,18 +906,19 @@ com.akifox.asynchttp.URL.prototype = {
 	,get_querystring: function() {
 		return this._querystring;
 	}
-	,__class__: com.akifox.asynchttp.URL
+	,__class__: com_akifox_asynchttp_URL
 	,__properties__: {get_querystring:"get_querystring",get_resource:"get_resource",get_host:"get_host",get_port:"get_port",get_protocol:"get_protocol",get_isRelative:"get_isRelative",get_isHttp:"get_isHttp",get_isSsl:"get_isSsl"}
 };
-var haxe = {};
-haxe.Http = function(url) {
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+var haxe_Http = function(url) {
 	this.url = url;
 	this.headers = new List();
 	this.params = new List();
 	this.async = true;
 };
-haxe.Http.__name__ = ["haxe","Http"];
-haxe.Http.prototype = {
+haxe_Http.__name__ = ["haxe","Http"];
+haxe_Http.prototype = {
 	setPostData: function(data) {
 		this.postData = data;
 		return this;
@@ -872,14 +926,21 @@ haxe.Http.prototype = {
 	,request: function(post) {
 		var me = this;
 		me.responseData = null;
-		var r = this.req = js.Browser.createXMLHttpRequest();
+		var r = this.req = js_Browser.createXMLHttpRequest();
 		var onreadystatechange = function(_) {
 			if(r.readyState != 4) return;
 			var s;
 			try {
 				s = r.status;
 			} catch( e ) {
+				if (e instanceof js__$Boot_HaxeError) e = e.val;
 				s = null;
+			}
+			if(s != null) {
+				var protocol = window.location.protocol.toLowerCase();
+				var rlocalProtocol = new EReg("^(?:about|app|app-storage|.+-extension|file|res|widget):$","");
+				var isLocal = rlocalProtocol.match(protocol);
+				if(isLocal) if(r.responseText != null) s = 200; else s = 404;
 			}
 			if(s == undefined) s = null;
 			if(s != null) me.onStatus(s);
@@ -907,9 +968,17 @@ haxe.Http.prototype = {
 		if(this.async) r.onreadystatechange = onreadystatechange;
 		var uri = this.postData;
 		if(uri != null) post = true; else {
-			var $it0 = this.params.iterator();
-			while( $it0.hasNext() ) {
-				var p = $it0.next();
+			var _g_head = this.params.h;
+			var _g_val = null;
+			while(_g_head != null) {
+				var p;
+				p = (function($this) {
+					var $r;
+					_g_val = _g_head[0];
+					_g_head = _g_head[1];
+					$r = _g_val;
+					return $r;
+				}(this));
 				if(uri == null) uri = ""; else uri += "&";
 				uri += encodeURIComponent(p.param) + "=" + encodeURIComponent(p.value);
 			}
@@ -921,6 +990,7 @@ haxe.Http.prototype = {
 				uri = null;
 			} else r.open("GET",this.url,this.async);
 		} catch( e1 ) {
+			if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
 			me.req = null;
 			this.onError(e1.toString());
 			return;
@@ -928,9 +998,17 @@ haxe.Http.prototype = {
 		if(!Lambda.exists(this.headers,function(h) {
 			return h.header == "Content-Type";
 		}) && post && this.postData == null) r.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-		var $it1 = this.headers.iterator();
-		while( $it1.hasNext() ) {
-			var h1 = $it1.next();
+		var _g_head1 = this.headers.h;
+		var _g_val1 = null;
+		while(_g_head1 != null) {
+			var h1;
+			h1 = (function($this) {
+				var $r;
+				_g_val1 = _g_head1[0];
+				_g_head1 = _g_head1[1];
+				$r = _g_val1;
+				return $r;
+			}(this));
 			r.setRequestHeader(h1.header,h1.value);
 		}
 		r.send(uri);
@@ -942,66 +1020,114 @@ haxe.Http.prototype = {
 	}
 	,onStatus: function(status) {
 	}
-	,__class__: haxe.Http
+	,__class__: haxe_Http
 };
-haxe.Timer = function() { };
-haxe.Timer.__name__ = ["haxe","Timer"];
-haxe.Timer.stamp = function() {
+var haxe__$Int64__$_$_$Int64 = function(high,low) {
+	this.high = high;
+	this.low = low;
+};
+haxe__$Int64__$_$_$Int64.__name__ = ["haxe","_Int64","___Int64"];
+haxe__$Int64__$_$_$Int64.prototype = {
+	__class__: haxe__$Int64__$_$_$Int64
+};
+var haxe_Timer = function() { };
+haxe_Timer.__name__ = ["haxe","Timer"];
+haxe_Timer.stamp = function() {
 	return new Date().getTime() / 1000;
 };
-haxe.ds = {};
-haxe.ds.StringMap = function() {
+var haxe_ds_IntMap = function() {
 	this.h = { };
 };
-haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe.ds.StringMap.__interfaces__ = [IMap];
-haxe.ds.StringMap.prototype = {
+haxe_ds_IntMap.__name__ = ["haxe","ds","IntMap"];
+haxe_ds_IntMap.__interfaces__ = [haxe_IMap];
+haxe_ds_IntMap.prototype = {
+	__class__: haxe_ds_IntMap
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
 	set: function(key,value) {
-		this.h["$" + key] = value;
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
 	}
 	,get: function(key) {
-		return this.h["$" + key];
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
 	}
 	,exists: function(key) {
-		return this.h.hasOwnProperty("$" + key);
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
 	}
 	,remove: function(key) {
-		key = "$" + key;
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
 	}
 	,keys: function() {
-		var a = [];
+		var _this = this.arrayKeys();
+		return HxOverrides.iter(_this);
+	}
+	,arrayKeys: function() {
+		var out = [];
 		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
+		if(this.h.hasOwnProperty(key)) out.push(key);
 		}
-		return HxOverrides.iter(a);
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
 	}
 	,toString: function() {
 		var s = new StringBuf();
 		s.b += "{";
-		var it = this.keys();
-		while( it.hasNext() ) {
-			var i = it.next();
-			if(i == null) s.b += "null"; else s.b += "" + i;
+		var keys = this.arrayKeys();
+		var _g1 = 0;
+		var _g = keys.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var k = keys[i];
+			if(k == null) s.b += "null"; else s.b += "" + k;
 			s.b += " => ";
-			s.add(Std.string(this.get(i)));
-			if(it.hasNext()) s.b += ", ";
+			s.add(Std.string(__map_reserved[k] != null?this.getReserved(k):this.h[k]));
+			if(i < keys.length) s.b += ", ";
 		}
 		s.b += "}";
 		return s.b;
 	}
-	,__class__: haxe.ds.StringMap
+	,__class__: haxe_ds_StringMap
 };
-haxe.io = {};
-haxe.io.Bytes = function(length,b) {
-	this.length = length;
-	this.b = b;
+var haxe_io_Bytes = function(data) {
+	this.length = data.byteLength;
+	this.b = new Uint8Array(data);
+	this.b.bufferValue = data;
+	data.hxBytes = this;
+	data.bytes = this.b;
 };
-haxe.io.Bytes.__name__ = ["haxe","io","Bytes"];
-haxe.io.Bytes.ofString = function(s) {
-	var a = new Array();
+haxe_io_Bytes.__name__ = ["haxe","io","Bytes"];
+haxe_io_Bytes.ofString = function(s) {
+	var a = [];
 	var i = 0;
 	while(i < s.length) {
 		var c = StringTools.fastCodeAt(s,i++);
@@ -1020,11 +1146,11 @@ haxe.io.Bytes.ofString = function(s) {
 			a.push(128 | c & 63);
 		}
 	}
-	return new haxe.io.Bytes(a.length,a);
+	return new haxe_io_Bytes(new Uint8Array(a).buffer);
 };
-haxe.io.Bytes.prototype = {
+haxe_io_Bytes.prototype = {
 	getString: function(pos,len) {
-		if(pos < 0 || len < 0 || pos + len > this.length) throw haxe.io.Error.OutsideBounds;
+		if(pos < 0 || len < 0 || pos + len > this.length) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
 		var s = "";
 		var b = this.b;
 		var fcc = String.fromCharCode;
@@ -1051,33 +1177,72 @@ haxe.io.Bytes.prototype = {
 	,toString: function() {
 		return this.getString(0,this.length);
 	}
-	,__class__: haxe.io.Bytes
+	,__class__: haxe_io_Bytes
 };
-haxe.io.Eof = function() { };
-haxe.io.Eof.__name__ = ["haxe","io","Eof"];
-haxe.io.Eof.prototype = {
-	toString: function() {
-		return "Eof";
+var haxe_io_Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
+haxe_io_Error.Blocked = ["Blocked",0];
+haxe_io_Error.Blocked.toString = $estr;
+haxe_io_Error.Blocked.__enum__ = haxe_io_Error;
+haxe_io_Error.Overflow = ["Overflow",1];
+haxe_io_Error.Overflow.toString = $estr;
+haxe_io_Error.Overflow.__enum__ = haxe_io_Error;
+haxe_io_Error.OutsideBounds = ["OutsideBounds",2];
+haxe_io_Error.OutsideBounds.toString = $estr;
+haxe_io_Error.OutsideBounds.__enum__ = haxe_io_Error;
+haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; $x.toString = $estr; return $x; };
+var haxe_io_FPHelper = function() { };
+haxe_io_FPHelper.__name__ = ["haxe","io","FPHelper"];
+haxe_io_FPHelper.i32ToFloat = function(i) {
+	var sign = 1 - (i >>> 31 << 1);
+	var exp = i >>> 23 & 255;
+	var sig = i & 8388607;
+	if(sig == 0 && exp == 0) return 0.0;
+	return sign * (1 + Math.pow(2,-23) * sig) * Math.pow(2,exp - 127);
+};
+haxe_io_FPHelper.floatToI32 = function(f) {
+	if(f == 0) return 0;
+	var af;
+	if(f < 0) af = -f; else af = f;
+	var exp = Math.floor(Math.log(af) / 0.6931471805599453);
+	if(exp < -127) exp = -127; else if(exp > 128) exp = 128;
+	var sig = Math.round((af / Math.pow(2,exp) - 1) * 8388608) & 8388607;
+	return (f < 0?-2147483648:0) | exp + 127 << 23 | sig;
+};
+haxe_io_FPHelper.i64ToDouble = function(low,high) {
+	var sign = 1 - (high >>> 31 << 1);
+	var exp = (high >> 20 & 2047) - 1023;
+	var sig = (high & 1048575) * 4294967296. + (low >>> 31) * 2147483648. + (low & 2147483647);
+	if(sig == 0 && exp == -1023) return 0.0;
+	return sign * (1.0 + Math.pow(2,-52) * sig) * Math.pow(2,exp);
+};
+haxe_io_FPHelper.doubleToI64 = function(v) {
+	var i64 = haxe_io_FPHelper.i64tmp;
+	if(v == 0) {
+		i64.low = 0;
+		i64.high = 0;
+	} else {
+		var av;
+		if(v < 0) av = -v; else av = v;
+		var exp = Math.floor(Math.log(av) / 0.6931471805599453);
+		var sig;
+		var v1 = (av / Math.pow(2,exp) - 1) * 4503599627370496.;
+		sig = Math.round(v1);
+		var sig_l = sig | 0;
+		var sig_h = sig / 4294967296.0 | 0;
+		i64.low = sig_l;
+		i64.high = (v < 0?-2147483648:0) | exp + 1023 << 20 | sig_h;
 	}
-	,__class__: haxe.io.Eof
+	return i64;
 };
-haxe.io.Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
-haxe.io.Error.Blocked = ["Blocked",0];
-haxe.io.Error.Blocked.__enum__ = haxe.io.Error;
-haxe.io.Error.Overflow = ["Overflow",1];
-haxe.io.Error.Overflow.__enum__ = haxe.io.Error;
-haxe.io.Error.OutsideBounds = ["OutsideBounds",2];
-haxe.io.Error.OutsideBounds.__enum__ = haxe.io.Error;
-haxe.io.Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe.io.Error; return $x; };
-haxe.xml = {};
-haxe.xml.Parser = function() { };
-haxe.xml.Parser.__name__ = ["haxe","xml","Parser"];
-haxe.xml.Parser.parse = function(str) {
+var haxe_xml_Parser = function() { };
+haxe_xml_Parser.__name__ = ["haxe","xml","Parser"];
+haxe_xml_Parser.parse = function(str,strict) {
+	if(strict == null) strict = false;
 	var doc = Xml.createDocument();
-	haxe.xml.Parser.doParse(str,0,doc);
+	haxe_xml_Parser.doParse(str,strict,0,doc);
 	return doc;
 };
-haxe.xml.Parser.doParse = function(str,p,parent) {
+haxe_xml_Parser.doParse = function(str,strict,p,parent) {
 	if(p == null) p = 0;
 	var xml = null;
 	var state = 1;
@@ -1088,6 +1253,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 	var nbrackets = 0;
 	var c = str.charCodeAt(p);
 	var buf = new StringBuf();
+	var escapeNext = 1;
+	var attrValQuote = -1;
 	while(!(c != c)) {
 		switch(state) {
 		case 0:
@@ -1113,7 +1280,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 13:
 			if(c == 60) {
-				var child = Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start));
+				buf.addSub(str,start,p - start);
+				var child = Xml.createPCData(buf.b);
 				buf = new StringBuf();
 				parent.addChild(child);
 				nsubs++;
@@ -1122,7 +1290,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			} else if(c == 38) {
 				buf.addSub(str,start,p - start);
 				state = 18;
-				next = 13;
+				escapeNext = 13;
 				start = p + 1;
 			}
 			break;
@@ -1140,16 +1308,16 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			case 33:
 				if(str.charCodeAt(p + 1) == 91) {
 					p += 2;
-					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw "Expected <![CDATA[";
+					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw new js__$Boot_HaxeError("Expected <![CDATA[");
 					p += 5;
 					state = 17;
 					start = p + 1;
 				} else if(str.charCodeAt(p + 1) == 68 || str.charCodeAt(p + 1) == 100) {
-					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw "Expected <!DOCTYPE";
+					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw new js__$Boot_HaxeError("Expected <!DOCTYPE");
 					p += 8;
 					state = 16;
 					start = p + 1;
-				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw "Expected <!--"; else {
+				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw new js__$Boot_HaxeError("Expected <!--"); else {
 					p += 2;
 					state = 15;
 					start = p + 1;
@@ -1160,7 +1328,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				start = p;
 				break;
 			case 47:
-				if(parent == null) throw "Expected node name";
+				if(parent == null) throw new js__$Boot_HaxeError("Expected node name");
 				start = p + 1;
 				state = 0;
 				next = 10;
@@ -1173,9 +1341,10 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 3:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
-				if(p == start) throw "Expected node name";
+				if(p == start) throw new js__$Boot_HaxeError("Expected node name");
 				xml = Xml.createElement(HxOverrides.substr(str,start,p - start));
 				parent.addChild(xml);
+				nsubs++;
 				state = 0;
 				next = 4;
 				continue;
@@ -1185,11 +1354,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			switch(c) {
 			case 47:
 				state = 11;
-				nsubs++;
 				break;
 			case 62:
 				state = 9;
-				nsubs++;
 				break;
 			default:
 				state = 5;
@@ -1200,10 +1367,10 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		case 5:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
 				var tmp;
-				if(start == p) throw "Expected attribute name";
+				if(start == p) throw new js__$Boot_HaxeError("Expected attribute name");
 				tmp = HxOverrides.substr(str,start,p - start);
 				aname = tmp;
-				if(xml.exists(aname)) throw "Duplicate attribute";
+				if(xml.exists(aname)) throw new js__$Boot_HaxeError("Duplicate attribute");
 				state = 0;
 				next = 6;
 				continue;
@@ -1216,29 +1383,62 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				next = 7;
 				break;
 			default:
-				throw "Expected =";
+				throw new js__$Boot_HaxeError("Expected =");
 			}
 			break;
 		case 7:
 			switch(c) {
 			case 34:case 39:
+				buf = new StringBuf();
 				state = 8;
-				start = p;
+				start = p + 1;
+				attrValQuote = c;
 				break;
 			default:
-				throw "Expected \"";
+				throw new js__$Boot_HaxeError("Expected \"");
 			}
 			break;
 		case 8:
-			if(c == str.charCodeAt(start)) {
-				var val = HxOverrides.substr(str,start + 1,p - start - 1);
-				xml.set(aname,val);
-				state = 0;
-				next = 4;
+			switch(c) {
+			case 38:
+				buf.addSub(str,start,p - start);
+				state = 18;
+				escapeNext = 8;
+				start = p + 1;
+				break;
+			case 62:
+				if(strict) throw new js__$Boot_HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val);
+					state = 0;
+					next = 4;
+				}
+				break;
+			case 60:
+				if(strict) throw new js__$Boot_HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val1 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val1);
+					state = 0;
+					next = 4;
+				}
+				break;
+			default:
+				if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val2 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val2);
+					state = 0;
+					next = 4;
+				}
 			}
 			break;
 		case 9:
-			p = haxe.xml.Parser.doParse(str,p,xml);
+			p = haxe_xml_Parser.doParse(str,strict,p,xml);
 			start = p;
 			state = 1;
 			break;
@@ -1248,7 +1448,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				state = 1;
 				break;
 			default:
-				throw "Expected >";
+				throw new js__$Boot_HaxeError("Expected >");
 			}
 			break;
 		case 12:
@@ -1257,14 +1457,24 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				if(nsubs == 0) parent.addChild(Xml.createPCData(""));
 				return p;
 			default:
-				throw "Expected >";
+				throw new js__$Boot_HaxeError("Expected >");
 			}
 			break;
 		case 10:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
-				if(start == p) throw "Expected node name";
+				if(start == p) throw new js__$Boot_HaxeError("Expected node name");
 				var v = HxOverrides.substr(str,start,p - start);
-				if(v != parent.get_nodeName()) throw "Expected </" + parent.get_nodeName() + ">";
+				if(v != (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + parent.nodeType);
+					$r = parent.nodeName;
+					return $r;
+				}(this))) throw new js__$Boot_HaxeError("Expected </" + (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + parent.nodeType;
+					$r = parent.nodeName;
+					return $r;
+				}(this)) + ">");
 				state = 0;
 				next = 12;
 				continue;
@@ -1272,14 +1482,18 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 15:
 			if(c == 45 && str.charCodeAt(p + 1) == 45 && str.charCodeAt(p + 2) == 62) {
-				parent.addChild(Xml.createComment(HxOverrides.substr(str,start,p - start)));
+				var xml1 = Xml.createComment(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml1);
+				nsubs++;
 				p += 2;
 				state = 1;
 			}
 			break;
 		case 16:
 			if(c == 91) nbrackets++; else if(c == 93) nbrackets--; else if(c == 62 && nbrackets == 0) {
-				parent.addChild(Xml.createDocType(HxOverrides.substr(str,start,p - start)));
+				var xml2 = Xml.createDocType(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml2);
+				nsubs++;
 				state = 1;
 			}
 			break;
@@ -1287,7 +1501,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 63 && str.charCodeAt(p + 1) == 62) {
 				p++;
 				var str1 = HxOverrides.substr(str,start + 1,p - start - 2);
-				parent.addChild(Xml.createProcessingInstruction(str1));
+				var xml3 = Xml.createProcessingInstruction(str1);
+				parent.addChild(xml3);
+				nsubs++;
 				state = 1;
 			}
 			break;
@@ -1295,12 +1511,22 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 59) {
 				var s = HxOverrides.substr(str,start,p - start);
 				if(s.charCodeAt(0) == 35) {
-					var i;
-					if(s.charCodeAt(1) == 120) i = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else i = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
-					buf.add(String.fromCharCode(i));
-				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.add(haxe.xml.Parser.escapes.get(s));
+					var c1;
+					if(s.charCodeAt(1) == 120) c1 = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else c1 = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					buf.b += String.fromCharCode(c1);
+				} else if(!haxe_xml_Parser.escapes.exists(s)) {
+					if(strict) throw new js__$Boot_HaxeError("Undefined entity: " + s);
+					buf.b += Std.string("&" + s + ";");
+				} else buf.add(haxe_xml_Parser.escapes.get(s));
 				start = p + 1;
-				state = next;
+				state = escapeNext;
+			} else if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45) && c != 35) {
+				if(strict) throw new js__$Boot_HaxeError("Invalid character in entity: " + String.fromCharCode(c));
+				buf.b += "&";
+				buf.addSub(str,start,p - start);
+				p--;
+				start = p + 1;
+				state = escapeNext;
 			}
 			break;
 		}
@@ -1311,18 +1537,47 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		state = 13;
 	}
 	if(state == 13) {
-		if(p != start || nsubs == 0) parent.addChild(Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start)));
+		if(p != start || nsubs == 0) {
+			buf.addSub(str,start,p - start);
+			var xml4 = Xml.createPCData(buf.b);
+			parent.addChild(xml4);
+			nsubs++;
+		}
 		return p;
 	}
-	throw "Unexpected end";
+	if(!strict && state == 18 && escapeNext == 13) {
+		buf.b += "&";
+		buf.addSub(str,start,p - start);
+		var xml5 = Xml.createPCData(buf.b);
+		parent.addChild(xml5);
+		nsubs++;
+		return p;
+	}
+	throw new js__$Boot_HaxeError("Unexpected end");
 };
-var js = {};
-js.Boot = function() { };
-js.Boot.__name__ = ["js","Boot"];
-js.Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+var js__$Boot_HaxeError = function(val) {
+	Error.call(this);
+	this.val = val;
+	this.message = String(val);
+	if(Error.captureStackTrace) Error.captureStackTrace(this,js__$Boot_HaxeError);
 };
-js.Boot.__string_rec = function(o,s) {
+js__$Boot_HaxeError.__name__ = ["js","_Boot","HaxeError"];
+js__$Boot_HaxeError.__super__ = Error;
+js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
+	__class__: js__$Boot_HaxeError
+});
+var js_Boot = function() { };
+js_Boot.__name__ = ["js","Boot"];
+js_Boot.getClass = function(o) {
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js_Boot.__nativeClassName(o);
+		if(name != null) return js_Boot.__resolveNativeClass(name);
+		return null;
+	}
+};
+js_Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
 	var t = typeof(o);
@@ -1332,24 +1587,24 @@ js.Boot.__string_rec = function(o,s) {
 		if(o instanceof Array) {
 			if(o.__enum__) {
 				if(o.length == 2) return o[0];
-				var str = o[0] + "(";
+				var str2 = o[0] + "(";
 				s += "\t";
 				var _g1 = 2;
 				var _g = o.length;
 				while(_g1 < _g) {
-					var i = _g1++;
-					if(i != 2) str += "," + js.Boot.__string_rec(o[i],s); else str += js.Boot.__string_rec(o[i],s);
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
 				}
-				return str + ")";
+				return str2 + ")";
 			}
 			var l = o.length;
-			var i1;
+			var i;
 			var str1 = "[";
 			s += "\t";
 			var _g2 = 0;
 			while(_g2 < l) {
 				var i2 = _g2++;
-				str1 += (i2 > 0?",":"") + js.Boot.__string_rec(o[i2],s);
+				str1 += (i2 > 0?",":"") + js_Boot.__string_rec(o[i2],s);
 			}
 			str1 += "]";
 			return str1;
@@ -1358,14 +1613,15 @@ js.Boot.__string_rec = function(o,s) {
 		try {
 			tostr = o.toString;
 		} catch( e ) {
+			if (e instanceof js__$Boot_HaxeError) e = e.val;
 			return "???";
 		}
-		if(tostr != null && tostr != Object.toString) {
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
 			var s2 = o.toString();
 			if(s2 != "[object Object]") return s2;
 		}
 		var k = null;
-		var str2 = "{\n";
+		var str = "{\n";
 		s += "\t";
 		var hasp = o.hasOwnProperty != null;
 		for( var k in o ) {
@@ -1375,12 +1631,12 @@ js.Boot.__string_rec = function(o,s) {
 		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
 			continue;
 		}
-		if(str2.length != 2) str2 += ", \n";
-		str2 += s + k + " : " + js.Boot.__string_rec(o[k],s);
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
 		}
 		s = s.substring(1);
-		str2 += "\n" + s + "}";
-		return str2;
+		str += "\n" + s + "}";
+		return str;
 	case "function":
 		return "<function>";
 	case "string":
@@ -1389,7 +1645,7 @@ js.Boot.__string_rec = function(o,s) {
 		return String(o);
 	}
 };
-js.Boot.__interfLoop = function(cc,cl) {
+js_Boot.__interfLoop = function(cc,cl) {
 	if(cc == null) return false;
 	if(cc == cl) return true;
 	var intf = cc.__interfaces__;
@@ -1399,12 +1655,12 @@ js.Boot.__interfLoop = function(cc,cl) {
 		while(_g1 < _g) {
 			var i = _g1++;
 			var i1 = intf[i];
-			if(i1 == cl || js.Boot.__interfLoop(i1,cl)) return true;
+			if(i1 == cl || js_Boot.__interfLoop(i1,cl)) return true;
 		}
 	}
-	return js.Boot.__interfLoop(cc.__super__,cl);
+	return js_Boot.__interfLoop(cc.__super__,cl);
 };
-js.Boot.__instanceof = function(o,cl) {
+js_Boot.__instanceof = function(o,cl) {
 	if(cl == null) return false;
 	switch(cl) {
 	case Int:
@@ -1423,7 +1679,9 @@ js.Boot.__instanceof = function(o,cl) {
 		if(o != null) {
 			if(typeof(cl) == "function") {
 				if(o instanceof cl) return true;
-				if(js.Boot.__interfLoop(js.Boot.getClass(o),cl)) return true;
+				if(js_Boot.__interfLoop(js_Boot.getClass(o),cl)) return true;
+			} else if(typeof(cl) == "object" && js_Boot.__isNativeObj(cl)) {
+				if(o instanceof cl) return true;
 			}
 		} else return false;
 		if(cl == Class && o.__name__ != null) return true;
@@ -1431,35 +1689,217 @@ js.Boot.__instanceof = function(o,cl) {
 		return o.__enum__ == cl;
 	}
 };
-js.Boot.__cast = function(o,t) {
-	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
+js_Boot.__cast = function(o,t) {
+	if(js_Boot.__instanceof(o,t)) return o; else throw new js__$Boot_HaxeError("Cannot cast " + Std.string(o) + " to " + Std.string(t));
 };
-js.Browser = function() { };
-js.Browser.__name__ = ["js","Browser"];
-js.Browser.createXMLHttpRequest = function() {
+js_Boot.__nativeClassName = function(o) {
+	var name = js_Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js_Boot.__isNativeObj = function(o) {
+	return js_Boot.__nativeClassName(o) != null;
+};
+js_Boot.__resolveNativeClass = function(name) {
+	return (Function("return typeof " + name + " != \"undefined\" ? " + name + " : null"))();
+};
+var js_Browser = function() { };
+js_Browser.__name__ = ["js","Browser"];
+js_Browser.createXMLHttpRequest = function() {
 	if(typeof XMLHttpRequest != "undefined") return new XMLHttpRequest();
 	if(typeof ActiveXObject != "undefined") return new ActiveXObject("Microsoft.XMLHTTP");
-	throw "Unable to create XMLHttpRequest object.";
+	throw new js__$Boot_HaxeError("Unable to create XMLHttpRequest object.");
 };
-js.Lib = function() { };
-js.Lib.__name__ = ["js","Lib"];
-js.Lib.alert = function(v) {
-	alert(js.Boot.__string_rec(v,""));
+js_Browser.alert = function(v) {
+	window.alert(js_Boot.__string_rec(v,""));
+};
+var js_html_compat_ArrayBuffer = function(a) {
+	if((a instanceof Array) && a.__enum__ == null) {
+		this.a = a;
+		this.byteLength = a.length;
+	} else {
+		var len = a;
+		this.a = [];
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			this.a[i] = 0;
+		}
+		this.byteLength = len;
+	}
+};
+js_html_compat_ArrayBuffer.__name__ = ["js","html","compat","ArrayBuffer"];
+js_html_compat_ArrayBuffer.sliceImpl = function(begin,end) {
+	var u = new Uint8Array(this,begin,end == null?null:end - begin);
+	var result = new ArrayBuffer(u.byteLength);
+	var resultArray = new Uint8Array(result);
+	resultArray.set(u);
+	return result;
+};
+js_html_compat_ArrayBuffer.prototype = {
+	slice: function(begin,end) {
+		return new js_html_compat_ArrayBuffer(this.a.slice(begin,end));
+	}
+	,__class__: js_html_compat_ArrayBuffer
+};
+var js_html_compat_DataView = function(buffer,byteOffset,byteLength) {
+	this.buf = buffer;
+	if(byteOffset == null) this.offset = 0; else this.offset = byteOffset;
+	if(byteLength == null) this.length = buffer.byteLength - this.offset; else this.length = byteLength;
+	if(this.offset < 0 || this.length < 0 || this.offset + this.length > buffer.byteLength) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
+};
+js_html_compat_DataView.__name__ = ["js","html","compat","DataView"];
+js_html_compat_DataView.prototype = {
+	getInt8: function(byteOffset) {
+		var v = this.buf.a[this.offset + byteOffset];
+		if(v >= 128) return v - 256; else return v;
+	}
+	,getUint8: function(byteOffset) {
+		return this.buf.a[this.offset + byteOffset];
+	}
+	,getInt16: function(byteOffset,littleEndian) {
+		var v = this.getUint16(byteOffset,littleEndian);
+		if(v >= 32768) return v - 65536; else return v;
+	}
+	,getUint16: function(byteOffset,littleEndian) {
+		if(littleEndian) return this.buf.a[this.offset + byteOffset] | this.buf.a[this.offset + byteOffset + 1] << 8; else return this.buf.a[this.offset + byteOffset] << 8 | this.buf.a[this.offset + byteOffset + 1];
+	}
+	,getInt32: function(byteOffset,littleEndian) {
+		var p = this.offset + byteOffset;
+		var a = this.buf.a[p++];
+		var b = this.buf.a[p++];
+		var c = this.buf.a[p++];
+		var d = this.buf.a[p++];
+		if(littleEndian) return a | b << 8 | c << 16 | d << 24; else return d | c << 8 | b << 16 | a << 24;
+	}
+	,getUint32: function(byteOffset,littleEndian) {
+		var v = this.getInt32(byteOffset,littleEndian);
+		if(v < 0) return v + 4294967296.; else return v;
+	}
+	,getFloat32: function(byteOffset,littleEndian) {
+		return haxe_io_FPHelper.i32ToFloat(this.getInt32(byteOffset,littleEndian));
+	}
+	,getFloat64: function(byteOffset,littleEndian) {
+		var a = this.getInt32(byteOffset,littleEndian);
+		var b = this.getInt32(byteOffset + 4,littleEndian);
+		return haxe_io_FPHelper.i64ToDouble(littleEndian?a:b,littleEndian?b:a);
+	}
+	,setInt8: function(byteOffset,value) {
+		if(value < 0) this.buf.a[byteOffset + this.offset] = value + 128 & 255; else this.buf.a[byteOffset + this.offset] = value & 255;
+	}
+	,setUint8: function(byteOffset,value) {
+		this.buf.a[byteOffset + this.offset] = value & 255;
+	}
+	,setInt16: function(byteOffset,value,littleEndian) {
+		this.setUint16(byteOffset,value < 0?value + 65536:value,littleEndian);
+	}
+	,setUint16: function(byteOffset,value,littleEndian) {
+		var p = byteOffset + this.offset;
+		if(littleEndian) {
+			this.buf.a[p] = value & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+		} else {
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p] = value & 255;
+		}
+	}
+	,setInt32: function(byteOffset,value,littleEndian) {
+		this.setUint32(byteOffset,value,littleEndian);
+	}
+	,setUint32: function(byteOffset,value,littleEndian) {
+		var p = byteOffset + this.offset;
+		if(littleEndian) {
+			this.buf.a[p++] = value & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p++] = value >> 16 & 255;
+			this.buf.a[p++] = value >>> 24;
+		} else {
+			this.buf.a[p++] = value >>> 24;
+			this.buf.a[p++] = value >> 16 & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p++] = value & 255;
+		}
+	}
+	,setFloat32: function(byteOffset,value,littleEndian) {
+		this.setUint32(byteOffset,haxe_io_FPHelper.floatToI32(value),littleEndian);
+	}
+	,setFloat64: function(byteOffset,value,littleEndian) {
+		var i64 = haxe_io_FPHelper.doubleToI64(value);
+		if(littleEndian) {
+			this.setUint32(byteOffset,i64.low);
+			this.setUint32(byteOffset,i64.high);
+		} else {
+			this.setUint32(byteOffset,i64.high);
+			this.setUint32(byteOffset,i64.low);
+		}
+	}
+	,__class__: js_html_compat_DataView
+};
+var js_html_compat_Uint8Array = function() { };
+js_html_compat_Uint8Array.__name__ = ["js","html","compat","Uint8Array"];
+js_html_compat_Uint8Array._new = function(arg1,offset,length) {
+	var arr;
+	if(typeof(arg1) == "number") {
+		arr = [];
+		var _g = 0;
+		while(_g < arg1) {
+			var i = _g++;
+			arr[i] = 0;
+		}
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js_html_compat_ArrayBuffer(arr);
+	} else if(js_Boot.__instanceof(arg1,js_html_compat_ArrayBuffer)) {
+		var buffer = arg1;
+		if(offset == null) offset = 0;
+		if(length == null) length = buffer.byteLength - offset;
+		if(offset == 0) arr = buffer.a; else arr = buffer.a.slice(offset,offset + length);
+		arr.byteLength = arr.length;
+		arr.byteOffset = offset;
+		arr.buffer = buffer;
+	} else if((arg1 instanceof Array) && arg1.__enum__ == null) {
+		arr = arg1.slice();
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js_html_compat_ArrayBuffer(arr);
+	} else throw new js__$Boot_HaxeError("TODO " + Std.string(arg1));
+	arr.subarray = js_html_compat_Uint8Array._subarray;
+	arr.set = js_html_compat_Uint8Array._set;
+	return arr;
+};
+js_html_compat_Uint8Array._set = function(arg,offset) {
+	var t = this;
+	if(js_Boot.__instanceof(arg.buffer,js_html_compat_ArrayBuffer)) {
+		var a = arg;
+		if(arg.byteLength + offset > t.byteLength) throw new js__$Boot_HaxeError("set() outside of range");
+		var _g1 = 0;
+		var _g = arg.byteLength;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i + offset] = a[i];
+		}
+	} else if((arg instanceof Array) && arg.__enum__ == null) {
+		var a1 = arg;
+		if(a1.length + offset > t.byteLength) throw new js__$Boot_HaxeError("set() outside of range");
+		var _g11 = 0;
+		var _g2 = a1.length;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[i1 + offset] = a1[i1];
+		}
+	} else throw new js__$Boot_HaxeError("TODO");
+};
+js_html_compat_Uint8Array._subarray = function(start,end) {
+	var t = this;
+	var a = js_html_compat_Uint8Array._new(t.slice(start,end));
+	a.byteOffset = start;
+	return a;
 };
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
 if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
 	return Array.prototype.indexOf.call(a,o,i);
-};
-Math.NaN = Number.NaN;
-Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
-Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
-Math.isFinite = function(i) {
-	return isFinite(i);
-};
-Math.isNaN = function(i1) {
-	return isNaN(i1);
 };
 String.prototype.__class__ = String;
 String.__name__ = ["String"];
@@ -1474,40 +1914,114 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = { __name__ : ["Class"]};
 var Enum = { };
-Xml.Element = "element";
-Xml.PCData = "pcdata";
-Xml.CData = "cdata";
-Xml.Comment = "comment";
-Xml.DocType = "doctype";
-Xml.ProcessingInstruction = "processingInstruction";
-Xml.Document = "document";
-com.akifox.asynchttp.AsyncHttp.logEnabled = false;
-com.akifox.asynchttp.AsyncHttp.errorSafe = true;
-com.akifox.asynchttp.AsyncHttp.userAgent = "akifox-asynchttp";
-com.akifox.asynchttp.AsyncHttp.maxRedirections = 10;
-com.akifox.asynchttp.AsyncHttp.DEFAULT_CONTENT_TYPE = "text/plain";
-com.akifox.asynchttp.AsyncHttp.DEFAULT_FILENAME = "unknown";
-com.akifox.asynchttp.AsyncHttp.CONTENT_KIND_MATCHES = [{ kind : com.akifox.asynchttp.ContentKind.IMAGE, regex : new EReg("^image/(jpe?g|png|gif)","i")},{ kind : com.akifox.asynchttp.ContentKind.XML, regex : new EReg("(application/xml|text/xml|\\+xml)","i")},{ kind : com.akifox.asynchttp.ContentKind.JSON, regex : new EReg("^(application/json|\\+json)","i")},{ kind : com.akifox.asynchttp.ContentKind.TEXT, regex : new EReg("(^text|application/javascript)","i")}];
-com.akifox.asynchttp.AsyncHttp.UID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-com.akifox.asynchttp.HttpHeaders.FORBIDDEN_ON_REQUEST = ["user-agent","host","content-type","content-length"];
-com.akifox.asynchttp.HttpMethod.GET = "GET";
-com.akifox.asynchttp.HttpMethod.POST = "POST";
-com.akifox.asynchttp.HttpMethod.PUT = "PUT";
-com.akifox.asynchttp.HttpMethod.DELETE = "DELETE";
-com.akifox.asynchttp.HttpMethod.METHODS = ["GET","POST","PUT","DELETE"];
-com.akifox.asynchttp.HttpMethod.DEFAULT_METHOD = "GET";
-com.akifox.asynchttp.HttpRequest.DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
-haxe.xml.Parser.escapes = (function($this) {
+var __map_reserved = {}
+var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuffer : null"))() || js_html_compat_ArrayBuffer;
+if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
+var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
+var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
+Xml.Element = 0;
+Xml.PCData = 1;
+Xml.CData = 2;
+Xml.Comment = 3;
+Xml.DocType = 4;
+Xml.ProcessingInstruction = 5;
+Xml.Document = 6;
+com_akifox_asynchttp_AsyncHttp.logEnabled = false;
+com_akifox_asynchttp_AsyncHttp.logErrorEnabled = true;
+com_akifox_asynchttp_AsyncHttp.errorSafe = false;
+com_akifox_asynchttp_AsyncHttp.userAgent = "akifox-asynchttp";
+com_akifox_asynchttp_AsyncHttp.maxRedirections = 10;
+com_akifox_asynchttp_AsyncHttp.DEFAULT_CONTENT_TYPE = "text/plain";
+com_akifox_asynchttp_AsyncHttp.DEFAULT_FILENAME = "unknown";
+com_akifox_asynchttp_AsyncHttp.CONTENT_KIND_MATCHES = [{ kind : com_akifox_asynchttp_ContentKind.IMAGE, regex : new EReg("^image/(jpe?g|png|gif)","i")},{ kind : com_akifox_asynchttp_ContentKind.XML, regex : new EReg("(application/xml|text/xml|\\+xml)","i")},{ kind : com_akifox_asynchttp_ContentKind.JSON, regex : new EReg("^(application/json|\\+json)","i")},{ kind : com_akifox_asynchttp_ContentKind.TEXT, regex : new EReg("(^text|application/javascript)","i")}];
+com_akifox_asynchttp_AsyncHttp.UID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+com_akifox_asynchttp_HttpHeaders.FORBIDDEN_ON_REQUEST = ["user-agent","host","content-type","content-length"];
+com_akifox_asynchttp_HttpMethod.GET = "GET";
+com_akifox_asynchttp_HttpMethod.POST = "POST";
+com_akifox_asynchttp_HttpMethod.PUT = "PUT";
+com_akifox_asynchttp_HttpMethod.DELETE = "DELETE";
+com_akifox_asynchttp_HttpMethod.METHODS = ["GET","POST","PUT","DELETE"];
+com_akifox_asynchttp_HttpMethod.DEFAULT_METHOD = "GET";
+com_akifox_asynchttp_HttpRequest.DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
+com_akifox_asynchttp_HttpResponse._httpStatus = (function($this) {
 	var $r;
-	var h = new haxe.ds.StringMap();
-	h.set("lt","<");
-	h.set("gt",">");
-	h.set("amp","&");
-	h.set("quot","\"");
-	h.set("apos","'");
-	h.set("nbsp",String.fromCharCode(160));
+	var _g = new haxe_ds_IntMap();
+	_g.h[100] = "Continue";
+	_g.h[101] = "Switching Protocols";
+	_g.h[102] = "Processing";
+	_g.h[200] = "OK";
+	_g.h[201] = "Created";
+	_g.h[202] = "Accepted";
+	_g.h[203] = "Non-Authoritative Information";
+	_g.h[204] = "No Content";
+	_g.h[205] = "Reset Content";
+	_g.h[206] = "Partial Content";
+	_g.h[207] = "Multi-Status";
+	_g.h[300] = "Multiple Choices";
+	_g.h[301] = "Moved Permanently";
+	_g.h[302] = "Found";
+	_g.h[303] = "See Other";
+	_g.h[304] = "Not Modified";
+	_g.h[305] = "Use Proxy";
+	_g.h[306] = "Switch Proxy";
+	_g.h[307] = "Temporary Redirect";
+	_g.h[400] = "Bad Request";
+	_g.h[401] = "Unauthorized";
+	_g.h[402] = "Payment Required";
+	_g.h[403] = "Forbidden";
+	_g.h[404] = "Not Found";
+	_g.h[405] = "Method Not Allowed";
+	_g.h[406] = "Not Acceptable";
+	_g.h[407] = "Proxy Authentication Required";
+	_g.h[408] = "Request Timeout";
+	_g.h[409] = "Conflict";
+	_g.h[410] = "Gone";
+	_g.h[411] = "Length Required";
+	_g.h[412] = "Precondition Failed";
+	_g.h[413] = "Request Entity Too Large";
+	_g.h[414] = "Request-URI Too Long";
+	_g.h[415] = "Unsupported Media Type";
+	_g.h[416] = "Requested Range Not Satisfiable";
+	_g.h[417] = "Expectation Failed";
+	_g.h[418] = "I'm a teapot";
+	_g.h[422] = "Unprocessable Entity";
+	_g.h[423] = "Locked";
+	_g.h[424] = "Failed Dependency";
+	_g.h[425] = "Unordered Collection";
+	_g.h[426] = "Upgrade Required";
+	_g.h[449] = "Retry With";
+	_g.h[450] = "Blocked by Windows Parental Controls";
+	_g.h[500] = "Internal Server Error";
+	_g.h[501] = "Not Implemented";
+	_g.h[502] = "Bad Gateway";
+	_g.h[503] = "Service Unavailable";
+	_g.h[504] = "Gateway Timeout";
+	_g.h[505] = "HTTP Version Not Supported";
+	_g.h[506] = "Variant Also Negotiates";
+	_g.h[507] = "Insufficient Storage";
+	_g.h[509] = "Bandwidth Limit Exceeded";
+	_g.h[510] = "Not Extended";
+	$r = _g;
+	return $r;
+}(this));
+haxe_io_FPHelper.i64tmp = (function($this) {
+	var $r;
+	var x = new haxe__$Int64__$_$_$Int64(0,0);
+	$r = x;
+	return $r;
+}(this));
+haxe_xml_Parser.escapes = (function($this) {
+	var $r;
+	var h = new haxe_ds_StringMap();
+	if(__map_reserved.lt != null) h.setReserved("lt","<"); else h.h["lt"] = "<";
+	if(__map_reserved.gt != null) h.setReserved("gt",">"); else h.h["gt"] = ">";
+	if(__map_reserved.amp != null) h.setReserved("amp","&"); else h.h["amp"] = "&";
+	if(__map_reserved.quot != null) h.setReserved("quot","\""); else h.h["quot"] = "\"";
+	if(__map_reserved.apos != null) h.setReserved("apos","'"); else h.h["apos"] = "'";
 	$r = h;
 	return $r;
 }(this));
+js_Boot.__toStr = {}.toString;
+js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
 AsyncHttpExample.main();
-})();
+})(typeof console != "undefined" ? console : {log:function(){}});

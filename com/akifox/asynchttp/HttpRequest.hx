@@ -155,7 +155,7 @@ class HttpRequest
 	}
     private function set_headers(value:HttpHeaders):HttpHeaders {
         if (_finalised) {
-            AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.headers] Can\'t modify a property when the instance is already sent');
+            AsyncHttp.error('HttpRequest.headers -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
         return _headers;
     }
     return _headers = value;
@@ -173,7 +173,7 @@ class HttpRequest
 	}
 	private function set_timeout(value:Int):Int {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.timeout] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.timeout -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _timeout;
 		}
 		if (value<1) value = 1;
@@ -194,7 +194,7 @@ class HttpRequest
 	}
 	private function set_async(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.async] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.async -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _async;
 		}
 		return _async = value;
@@ -212,7 +212,7 @@ class HttpRequest
 	}
 	private function set_http11(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.http11] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.http11 -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _http11;
 		}
 		return _http11 = value;
@@ -240,18 +240,18 @@ class HttpRequest
           case 'com.akifox.asynchttp.URL' | 'URL':
             v = value.clone();
           default:
-    		AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Please specify an URL Object or a String');
+    		AsyncHttp.error('HttpRequest.url -> Please specify an URL Object or a String', _fingerprint, true);
     		return _url;
         }
 
         #if (!js && !flash)
         if (v.isRelative || !v.isHttp) {
-            AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] `$value` is not a valid HTTP URL');
+            AsyncHttp.error('HttpRequest.url -> `$value` is not a valid HTTP URL', _fingerprint, true);
         }
         #end
 
         if (_finalised) {
-        	AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.url] Can\'t modify a property when the instance is already sent');
+        	AsyncHttp.error('HttpRequest.url -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
         	return _url;
         }
         return _url = v;
@@ -271,7 +271,7 @@ class HttpRequest
 	}
 	private function set_method(value:String):String {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.method] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.method -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _method;
 		}
 		value = HttpMethod.validate(value);
@@ -290,7 +290,7 @@ class HttpRequest
 	}
 	private function set_content(value:Dynamic):Dynamic {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.content] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.content -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _content;
 		}
 		return _content = value;
@@ -309,7 +309,7 @@ class HttpRequest
 	}
 	private function set_contentType(value:String):String {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.contentType] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.contentType -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _contentType;
 		}
 		// default content type
@@ -330,7 +330,7 @@ class HttpRequest
 	}
 	private function set_contentIsBinary(value:Bool):Bool {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.contentIsBinary] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.contentIsBinary -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _contentIsBinary;
 		}
 		return _contentIsBinary = value;
@@ -350,7 +350,7 @@ class HttpRequest
 	}
 	private function set_callback(value:HttpResponse->Void):HttpResponse->Void {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.callback] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.callback -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _callback;
 		}
 		return _callback = value;
@@ -368,7 +368,7 @@ class HttpRequest
 	}
 	private function set_callbackError(value:HttpResponse->Void):HttpResponse->Void {
 		if (_finalised) {
-			AsyncHttp.error('HttpRequest $_fingerprint ERROR: [.callbackError] Can\'t modify a property when the instance is already sent');
+			AsyncHttp.error('HttpRequest.callbackError -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
 			return _callbackError;
 		}
 		return _callbackError = value;

@@ -27,10 +27,6 @@ class Main {
    		// Force log to console (default enabled on -debug)
 		AsyncHttp.logEnabled = true;
 
-   		// Force not throwing errors but trace (default disabled on -debug)
-		AsyncHttp.errorSafe = true;
-
-
 		// --------------------------------------------------------------------------------------------------
 
 

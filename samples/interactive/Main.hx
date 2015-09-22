@@ -11,9 +11,6 @@ class Main {
 		// Force log to console (usually enabled only on -debug)
 		AsyncHttp.logEnabled = true;
 
-		// Force not throwing errors but trace (default disabled on -debug)
-		AsyncHttp.errorSafe = true;
-
 #if sys
 
 		trace('\n>> Enter an URL and press [enter] (also HTTP://):\nexample: http://wikipedia.com/wiki/wikipedia');
@@ -57,8 +54,8 @@ class Main {
 				trace('[ Text file <' + response.contentType + '> "' + response.filename + '" ' + Std.int(response.contentLength/1024*100)/100 + 'kb]');
 			}
 		} else {
-			trace('Response error status ' + response.status);
+			trace('Response error (' + response.status + ') ['+response.error+']');
 		}
-		trace('-------------------------');
+		trace('-------------------------\n\n\n');
 	}
 }
