@@ -259,12 +259,6 @@ class AsyncHttp
 		response = null;
 	}
 
-	private inline function callback_progress(request:HttpRequest, percent:Int):Void {
-		if (request.callback_progress != null){
-			request.callback_progress(percent);
-		}
-	}
-
 	#if (neko || cpp || java)
 
 	// ==========================================================================================
@@ -522,8 +516,6 @@ class AsyncHttp
 			      bytes_left -= actual_block_len;
 
 			      bytes_loaded += actual_block_len;
-				  var percent:Int = Std.int(Math.round(bytes_loaded / contentLength * 1000) / 10);
-				  this.callback_progress(request,percent);
 			      log('Loaded $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)',request.fingerprint);
 			    }
 
