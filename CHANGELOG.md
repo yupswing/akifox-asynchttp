@@ -1,6 +1,11 @@
 
 # Changelog
 
+## What's new 0.4.3
+
+- Minor fixes
+- Added callbackProgress
+
 ## What's new 0.4.2
 
 - Minor fixes

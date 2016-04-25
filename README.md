@@ -1,4 +1,4 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.2-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.3-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
 
@@ -93,6 +93,7 @@ import com.akifox.asynchttp.*;
   - [x] Image (Png,Jpeg, Gif) to BitmapData object (only with OpenFL support)
 - Additional features
   - [x] Synchronous request option **[v0.4+]**
+  - [x] Progress callback **[v0.4+]**
 - Future releases
   - [ ] Support SSL for iOS and Android (need to make [hxssl](https://github.com/tong/hxssl) NDLLs for those platform)
   - [ ] Posting content on request (it should work but needs extensive tests)
@@ -269,7 +270,8 @@ var request = new HttpRequest({
       },
 
   // !OPTIONAL! If set this function will handle all the response errors
-  // otherwise success and failure responses will be given to the standard 'callback'
+  //            otherwise success and failure responses will be given
+  //            to the standard 'callback'
   callbackError : function(response:HttpResponse):Void {
          // response.isOK is always False here
 
@@ -279,6 +281,17 @@ var request = new HttpRequest({
          var status:Int = response.status;
 
          trace('ERROR (HTTP STATUS ${status})');
+
+      },
+
+  // !OPTIONAL! If set this function will be called at every update on an HTTP Transfer
+  // and at the beginning/end of the transfer
+  // It gives back 2 values:
+  //   loaded:Int loaded bytes
+  //   total:Int total bytes (-1 if undefined)
+  callbackProgress : function(loaded:Int,total:Int):Void {
+
+         trace('LOADING ${loaded}/${total}');
 
       },
 
@@ -358,6 +371,11 @@ A simple example in javascript that shows how to use the library.
 [Check it out](/samples/flash/)
 
 A simple example in flash that shows how to use the library.
+
+### Loader example
+[Check it out](/samples/loader/)
+
+A simple example to show the callbackProgress optional callback
 
 ### OpenFL Image URL to Stage (Bitmap) example
 [Check it out](/samples/openfl/)

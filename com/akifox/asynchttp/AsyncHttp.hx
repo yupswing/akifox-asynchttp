@@ -5,7 +5,7 @@ package com.akifox.asynchttp;
 
 @licence MIT Licence
 
-@version 0.4.2
+@version 0.4.3
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
 #### Asyncronous HTTP+HTTPS Request HAXE Library
@@ -259,6 +259,10 @@ class AsyncHttp
 		response = null;
 	}
 
+	private inline function callbackProgress(request:HttpRequest, loaded:Int, total:Int):Void {
+		if (request.callbackProgress != null) request.callbackProgress(loaded,total);
+	}
+
 	#if (neko || cpp || java)
 
 	// ==========================================================================================
@@ -478,6 +482,7 @@ class AsyncHttp
 
 			var bytes_loaded:Int = 0;
 			var contentBytes:Bytes=null;
+			this.callbackProgress(request, 0, -1);
 
 			switch(mode) {
 				case HttpTransferMode.UNDEFINED:
@@ -490,6 +495,7 @@ class AsyncHttp
 						contentBytes = Bytes.alloc(0);
 					}
 					contentLength = contentBytes.length;
+					this.callbackProgress(request, contentLength, contentLength);
 				  log('Loaded $contentLength/$contentLength bytes (100%)',request.fingerprint);
 
 				case HttpTransferMode.FIXED:
@@ -516,6 +522,7 @@ class AsyncHttp
 			      bytes_left -= actual_block_len;
 
 			      bytes_loaded += actual_block_len;
+				    this.callbackProgress(request, bytes_loaded, contentLength);
 			      log('Loaded $bytes_loaded/$contentLength bytes (' + Math.round(bytes_loaded / contentLength * 1000) / 10 + '%)',request.fingerprint);
 			    }
 
@@ -535,6 +542,7 @@ class AsyncHttp
 							bytes_loaded += chunk;
 							buffer.add(bytes);
 							s.input.read(2); // \n\r between chunks = 2 bytes
+					    this.callbackProgress(request, bytes_loaded, -1);
 							log('Loaded $bytes_loaded bytes (Total unknown)',request.fingerprint);
 						}
 					} catch(msg:Dynamic) {

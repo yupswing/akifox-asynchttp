@@ -22,6 +22,7 @@ typedef HttpRequestOptions = {
   ? http11: Bool,
   ? url: Dynamic,
   ? callback: HttpResponse->Void,
+  ? callbackProgress: Int->Int->Void,
   ? callbackError: HttpResponse->Void,
 	? headers : HttpHeaders,
 	? timeout : Int,
@@ -71,6 +72,7 @@ class HttpRequest
       if(options.http11 != null)  http11 = options.http11;
 			if(options.url != null)  url = options.url;
 			if(options.callback != null) callback = options.callback;
+			if(options.callbackProgress != null) callbackProgress = options.callbackProgress;
 			if(options.callbackError != null)	callbackError = options.callbackError;
 			if(options.headers != null)	_headers = options.headers.clone(); // get a mutable copy of the headers
 			if(options.timeout != null)	timeout = options.timeout;
@@ -101,6 +103,7 @@ class HttpRequest
       http11 : this._http11,
 			url : this._url,
 			callback : this._callback,
+			callbackProgress : this._callbackProgress,
 			headers : this._headers,
 			timeout : this._timeout,
 			method : this._method,
@@ -372,6 +375,23 @@ class HttpRequest
 			return _callbackError;
 		}
 		return _callbackError = value;
+	}
+
+	/**
+  * The callbackProgress function to be called when get a block on transfer mode FIXED
+  * Otherwise it will be called only if the response is valid
+  **/
+	public var callbackProgress(get,set):Int->Int->Void;
+	private var _callbackProgress:Int->Int->Void=null;
+	private function get_callbackProgress():Int->Int->Void {
+		return _callbackProgress;
+	}
+	private function set_callbackProgress(value:Int->Int->Void):Int->Int->Void {
+		if (_finalised) {
+			AsyncHttp.error('HttpRequest.callbackProgress -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
+			return _callbackProgress;
+		}
+		return _callbackProgress = value;
 	}
 
 }
