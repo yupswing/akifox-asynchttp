@@ -5,7 +5,7 @@
   "tags": ["cross","flash","cpp","neko","java","js","http","https","request","response","synchronous","asynchronous"],
   "description": "Haxe multi-platform Asynchronous HTTP+HTTPS Requests",
   "version": "0.4.3",
-  "releasenote": "Minor fixes",
+  "releasenote": "Minor fixes + callbackProgress",
   "contributors": ["yupswing"],
   "dependencies": {}
 }

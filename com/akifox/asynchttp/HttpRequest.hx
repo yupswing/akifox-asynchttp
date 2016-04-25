@@ -22,7 +22,7 @@ typedef HttpRequestOptions = {
   ? http11: Bool,
   ? url: Dynamic,
   ? callback: HttpResponse->Void,
-  ? callback_progress: Int->Void,
+  ? callbackProgress: Int->Int->Void,
   ? callbackError: HttpResponse->Void,
 	? headers : HttpHeaders,
 	? timeout : Int,
@@ -72,7 +72,7 @@ class HttpRequest
       if(options.http11 != null)  http11 = options.http11;
 			if(options.url != null)  url = options.url;
 			if(options.callback != null) callback = options.callback;
-			if(options.callback_progress != null) callback_progress = options.callback_progress;
+			if(options.callbackProgress != null) callbackProgress = options.callbackProgress;
 			if(options.callbackError != null)	callbackError = options.callbackError;
 			if(options.headers != null)	_headers = options.headers.clone(); // get a mutable copy of the headers
 			if(options.timeout != null)	timeout = options.timeout;
@@ -103,7 +103,7 @@ class HttpRequest
       http11 : this._http11,
 			url : this._url,
 			callback : this._callback,
-			callback_progress : this._callback_progress,
+			callbackProgress : this._callbackProgress,
 			headers : this._headers,
 			timeout : this._timeout,
 			method : this._method,
@@ -359,23 +359,6 @@ class HttpRequest
 		return _callback = value;
 	}
 
-	/**
-  * The callback_progress function to be called when get a block on transfer mode FIXED
-  * Otherwise it will be called only if the response is valid
-  **/
-	public var callback_progress(get,set):Int->Void;
-	private var _callback_progress:Int->Void=null;
-	private function get_callback_progress():Int->Void {
-		return _callback_progress;
-	}
-	private function set_callback_progress(value:Int->Void):Int->Void {
-		if (_finalised) {
-			AsyncHttp.error('HttpRequest.callback_progress -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
-			return _callback_progress;
-		}
-		return _callback_progress = value;
-	}
-
   /**
   * The callback error (**optional**) function to be called when the response returns an error
   *
@@ -392,6 +375,23 @@ class HttpRequest
 			return _callbackError;
 		}
 		return _callbackError = value;
+	}
+
+	/**
+  * The callbackProgress function to be called when get a block on transfer mode FIXED
+  * Otherwise it will be called only if the response is valid
+  **/
+	public var callbackProgress(get,set):Int->Int->Void;
+	private var _callbackProgress:Int->Int->Void=null;
+	private function get_callbackProgress():Int->Int->Void {
+		return _callbackProgress;
+	}
+	private function set_callbackProgress(value:Int->Int->Void):Int->Int->Void {
+		if (_finalised) {
+			AsyncHttp.error('HttpRequest.callbackProgress -> Can\'t modify a property when the instance is already sent', _fingerprint, true);
+			return _callbackProgress;
+		}
+		return _callbackProgress = value;
 	}
 
 }
