@@ -378,8 +378,15 @@ class HttpRequest
 	}
 
 	/**
-  * The callbackProgress function to be called when get a block on transfer mode FIXED
-  * Otherwise it will be called only if the response is valid
+  * The callbackProgress (**optional**) function to be called when get any data on an HTTP Transfer
+  * It gets called for sure at the beginning and end of any transfer
+  * and (if the HTTP transfer mode supports it) also in between the transfer.
+  *
+  * The function has to accept two parameters:
+  *
+  * - loaded:Int  the received bytes
+  *
+  * - total:Int   the total bytes (-1 if unknown)
   **/
 	public var callbackProgress(get,set):Int->Int->Void;
 	private var _callbackProgress:Int->Int->Void=null;

@@ -1,6 +1,10 @@
 
 # Changelog
 
+## What's new 0.4.4
+
+- We will see
+
 ## What's new 0.4.3
 
 - Minor fixes
