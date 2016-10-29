@@ -79,7 +79,7 @@ using StringTools;
 		private typedef SocketSSL = sys.ssl.Socket;
 		// #end
 	#else
-	private typedef SocketSSL = sys.net.Socket; // NO SSL (fallback to HTTP Socket)
+	private typedef SocketSSL = sys.ssl.Socket; // NO SSL (fallback to HTTP Socket)
 	#end
 
 	// Host
@@ -291,11 +291,11 @@ class AsyncHttp
 		var s:AbstractSocket;
 		if (url.isSsl) {
 			s = new SocketSSL();
-			#if (!php && !java && !hxssl)
-			error('Requested HTTPS but no SSL support (fallback on HTTP)\n'+
-						'**** On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl` ****',
-						request.fingerprint);
-			#end
+// #if (!php && !java && !hxssl)
+// 			error('Requested HTTPS but no SSL support (fallback on HTTP)\n'+
+// 						'**** On Neko/CPP the library supports hxssl (you have to install and reference it with `-lib hxssl` ****',
+// 						request.fingerprint);
+// 			#end
 		} else {
 			s = new SocketTCP();
 		}
