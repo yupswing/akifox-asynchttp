@@ -1,6 +1,11 @@
 
 # Changelog
 
+## What's new 0.4.4
+
+- Using Haxe 3.3 allow support for SSL in most platform out of the box
+- Beautify code
+
 ## What's new 0.4.3
 
 - Minor fixes

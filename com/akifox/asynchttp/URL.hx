@@ -27,62 +27,62 @@ class URL {
   var _querystring:String = "";
 
   /**
-  * Class instance
-  *
-  * @param urlString  An URL string in standard format "protocol://host:port/resource?querystring"
-  **/
+   * Class instance
+   *
+   * @param urlString  An URL string in standard format "protocol://host:port/resource?querystring"
+   **/
   public function new(urlString:String) {
     _urlString = urlString;
 
     if (regexURL.match(urlString)) {
-      _protocol = regexURL.matched(1).substr(0,-1);
-      if (_protocol==null) _protocol = "";
+      _protocol = regexURL.matched(1).substr(0, -1);
+      if (_protocol == null) _protocol = "";
       _host = regexURL.matched(2).substr(2);
-      if (_host==null) _host = "";
+      if (_host == null) _host = "";
       _port = regexURL.matched(3);
-      if (_port==null) _port = "";
+      if (_port == null) _port = "";
       _resource = regexURL.matched(4);
-      if (_resource==null) _resource = "";
+      if (_resource == null) _resource = "";
       _querystring = regexURL.matched(5);
-      if (_querystring==null) _querystring = "";
+      if (_querystring == null) _querystring = "";
     }
   }
 
   /**
-  * @returns   A string representation of the URL: "protocol://host:port/resource?querystring"
-  **/
+   * @returns   A string representation of the URL:"protocol://host:port/resource?querystring"
+   **/
   public function toString():String {
     return '$protocol$_host$_port$_resource$_querystring';
   }
 
   /**
-  * Deep copy of the URL
-  *
-  * @returns   A new URL
-  **/
+   * Deep copy of the URL
+   *
+   * @returns   A new URL
+   **/
   public function clone():URL {
     return new URL(this.toString());
   }
 
   /**
-  * Merge this URL with another one.
-  * If this URL is relative it will copy the missing parts from the given one,
-  * otherwise nothing will change.
-  * (this method is needed to make a relative URL complete)
-  *
-  * @param   URL to be merged with
-  * @returns This URL
-  **/
+   * Merge this URL with another one.
+   * If this URL is relative it will copy the missing parts from the given one,
+   * otherwise nothing will change.
+   * (this method is needed to make a relative URL complete)
+   *
+   * @param   URL to be merged with
+   * @returns This URL
+   **/
   public function merge(url:URL):URL {
-    if (_protocol=="") _protocol = url._protocol;
-    if (_host=="") _host = url._host;
-    if (_port=="") _port = url._port;
-    _resource = mergeResources(_resource,url._resource);
+    if (_protocol == "") _protocol = url._protocol;
+    if (_host == "") _host = url._host;
+    if (_port == "") _port = url._port;
+    _resource = mergeResources(_resource, url._resource);
     // no querystring merging
     return this;
   }
 
-  private function mergeResources(resNew:String,resOriginal:String="") {
+  private function mergeResources(resNew:String, resOriginal:String = "") {
 
     //TODO could be better performances
 
@@ -92,32 +92,32 @@ class URL {
 
     var result:String;
     var levels:Array<String>;
-    if (resNew.substr(0,1)=="/") {
-        levels = resNew.split('/');
+    if (resNew.substr(0, 1) == "/") {
+      levels = resNew.split('/');
     } else {
-        levels = resOriginal.split("/");
-        levels.pop();
-        levels = levels.concat(resNew.split("/"));
+      levels = resOriginal.split("/");
+      levels.pop();
+      levels = levels.concat(resNew.split("/"));
     }
     var finish = false;
     do {
-        var loop = levels.length;
-        var i = 0;
-        while(true) {
-            if (levels[i]=='..') {
-               if (i>0) levels.splice(i-1,2);
-               else levels.shift();
-               break;
-            }
-            i++;
-            if (i>=loop){
-                finish = true;
-                break;
-            }
+      var loop = levels.length;
+      var i = 0;
+      while (true) {
+        if (levels[i] == '..') {
+          if (i > 0) levels.splice(i - 1, 2);
+          else levels.shift();
+          break;
         }
-    } while(!finish);
+        i++;
+        if (i >= loop) {
+          finish = true;
+          break;
+        }
+      }
+    } while (!finish);
     result = levels.join('/');
-    if (result.substr(0,1)!='/') result = '/$result';
+    if (result.substr(0, 1) != '/') result = '/$result';
     return result;
 
   }
@@ -125,26 +125,26 @@ class URL {
   //============================================================================
 
   /**
-  * Tells if the URL use an SSL protocol
-  **/
-  public var isSsl(get,never):Bool;
+   * Tells if the URL use an SSL protocol
+   **/
+  public var isSsl(get, never):Bool;
   private function get_isSsl():Bool {
     return (_protocol == "https");
   }
 
   /**
-  * Tells if the URL use an HTTP(S) protocol
-  **/
-  public var isHttp(get,never):Bool;
+   * Tells if the URL use an HTTP(S) protocol
+   **/
+  public var isHttp(get, never):Bool;
   private function get_isHttp():Bool {
-    return (_protocol.substr(0,4) == "http"); //http or https
+    return (_protocol.substr(0, 4) == "http"); //http or https
   }
 
   /**
-  * Tells if the URL is relative
-  * (Only absolute URLs are complete. Any relative one needs to be merged with a complete to make it point to a resource)
-  **/
-  public var isRelative(get,never):Bool;
+   * Tells if the URL is relative
+   * (Only absolute URLs are complete. Any relative one needs to be merged with a complete to make it point to a resource)
+   **/
+  public var isRelative(get, never):Bool;
   private function get_isRelative():Bool {
     return (_protocol == "" || _host == "");
   }
@@ -152,23 +152,23 @@ class URL {
   //============================================================================
 
   /**
-  * The protocol (ie: "http://")
-  **/
-  public var protocol(get,never):String;
+   * The protocol (ie:"http://")
+   **/
+  public var protocol(get, never):String;
   private function get_protocol():String {
-    if (_protocol!="") return '$_protocol://';
+    if (_protocol != "") return '$_protocol://';
     return '';
   }
 
   /**
-  * The port (ie: 80)
-  **/
-  public var port(get,never):Int;
+   * The port (ie:80)
+   **/
+  public var port(get, never):Int;
   private function get_port():Int {
-    if (_port=="") {
-      if (isHttp&&!isSsl) {
+    if (_port == "") {
+      if (isHttp && !isSsl) {
         return 80;
-      } else if (isHttp&&isSsl) {
+      } else if (isHttp && isSsl) {
         return 443;
       } else {
         // need to be expanded to support more protocols default ports
@@ -180,26 +180,26 @@ class URL {
   }
 
   /**
-  * The host (ie: google.com)
-  **/
-  public var host(get,never):String;
+   * The host (ie:google.com)
+   **/
+  public var host(get, never):String;
   private function get_host():String {
     return _host;
   }
 
   /**
-  * The resource (ie: /search/index.html)
-  **/
-  public var resource(get,never):String;
+   * The resource (ie:/search/index.html)
+   **/
+  public var resource(get, never):String;
   private function get_resource():String {
     if (_resource == "") return "/";
     return _resource;
   }
 
   /**
-  * The querystring (ie: ?q=test&s=1)
-  **/
-  public var querystring(get,never):String;
+   * The querystring (ie:?q=test&s=1)
+   **/
+  public var querystring(get, never):String;
   private function get_querystring():String {
     return _querystring;
   }

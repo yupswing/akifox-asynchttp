@@ -20,13 +20,13 @@ class HttpMethod {
   public static inline var POST = "POST";
   public static inline var PUT = "PUT";
   public static inline var DELETE = "DELETE";
-  private static var METHODS = ["GET","POST","PUT","DELETE"];
+  private static var METHODS = ["GET", "POST", "PUT", "DELETE"];
   @:dox(hide)
   public static inline var DEFAULT_METHOD = GET;
 
   @:dox(hide)
   public static function validate(value:String) {
-  	if (value==null || HttpMethod.METHODS.indexOf(value)==-1) value = DEFAULT_METHOD;
-  	return value;
+    if (value == null || HttpMethod.METHODS.indexOf(value) == -1) value = DEFAULT_METHOD;
+    return value;
   }
 }
