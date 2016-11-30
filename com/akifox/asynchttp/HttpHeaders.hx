@@ -15,8 +15,7 @@ This class represents an Http header collection and it is used by the library to
 
 class HttpHeaders {
 
-  private static
-  var FORBIDDEN_ON_REQUEST = ["user-agent", "host", "content-type", "content-length"];
+  private static var FORBIDDEN_ON_REQUEST = ["user-agent", "host", "content-type", "content-length"];
 
   private var _headers:Map<String,String> = new Map<String,String>();
 
@@ -84,8 +83,7 @@ class HttpHeaders {
 
   // used when sending a request to exclude already managed headers
   @:dox(hide)
-  public static
-  function validateRequest(header:String):Bool {
+  public static function validateRequest(header:String):Bool {
     if (header == null) return false;
     if (FORBIDDEN_ON_REQUEST.indexOf(header.toLowerCase()) >= 0) return false;
     return true;
