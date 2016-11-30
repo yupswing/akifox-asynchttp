@@ -1,0 +1,4 @@
+-main Main
+-swf output/main.swf
+-swf-version 10.1
+-lib akifox-asynchttp

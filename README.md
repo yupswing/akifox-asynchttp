@@ -1,6 +1,6 @@
 [![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.4-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Haxe 3](https://img.shields.io/badge/language-Haxe%203-orange.svg)](http://www.haxe.org)
+[![Haxe 3](https://img.shields.io/badge/language-Haxe%203.3+-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 [![Haxelib](https://img.shields.io/badge/distr-v0.4.4-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
@@ -94,8 +94,8 @@ import com.akifox.asynchttp.*;
 - Additional features
   - [x] Synchronous request option **[v0.4+]**
   - [x] Progress callback **[v0.4.3+]**
+  - [x] Support SSL for iOS and Android **[v0.4.4+]**
 - Future releases
-  - [ ] Support SSL for iOS and Android (need to make [hxssl](https://github.com/tong/hxssl) NDLLs for those platform)
   - [ ] Posting content on request (it should work but needs extensive tests)
   - [ ] Chain requests (one thread multiple requests)
   - [ ] Test socket solution on Flash target (it could be better than URLLoader)
@@ -347,6 +347,11 @@ newRequest.send();
 
 ## Examples
 
+### One example
+[Check it out](/samples/one/)
+
+The example shows loading an wikipedia page (with redirect from http to https and so also SSL support).
+
 ### Simple example with concurrent multiple requests
 [Check it out](/samples/simple/)
 
@@ -356,11 +361,6 @@ The example shows how to handle multiple requests and responses
 [Check it out](/samples/interactive/)
 
 The example allow the user to try any URL to see the behavior of the library with redirects, errors and his own urls.
-
-### SSL example
-[Check it out](/samples/ssl/)
-
-The example shows the seamless SSL support (the only difference between HTTP and HTTPS is in the URL).
 
 ### Javascript example
 [Check it out](/samples/javascript/)
