@@ -8,7 +8,7 @@ class Main extends Sprite {
 
 
 	var images = ["http://www.openfl.org/images/logo.png",
-			  "http://old.haxe.org/file/foundation.jpg",
+			  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Haxe_logo.svg/200px-Haxe_logo.svg.png",
 			  "http://i0.kym-cdn.com/photos/images/list/000/160/616/TROLOLOL.jpg"];
 	var index = 0;
 
@@ -50,6 +50,7 @@ class Main extends Sprite {
 
 		var request = new HttpRequest({
 								url : images[index-1],
+                async : true,
 								callback : function(response:HttpResponse) {
 															if (response.isOK) {
 																trace('DONE (HTTP STATUS ${response.status})');
