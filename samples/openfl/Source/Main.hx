@@ -50,7 +50,7 @@ class Main extends Sprite {
 
 		var request = new HttpRequest({
 								url : images[index-1],
-                async : true,
+                async : false,
 								callback : function(response:HttpResponse) {
 															if (response.isOK) {
 																trace('DONE (HTTP STATUS ${response.status})');

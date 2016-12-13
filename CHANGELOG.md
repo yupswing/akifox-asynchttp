@@ -3,7 +3,7 @@
 
 ## What's new 0.4.5
 
-- #TODO
+- Fixed close connection using HTTP/1.1 (thanks to PaulGene https://github.com/yupswing/akifox-asynchttp/issues/32)
 
 ## What's new 0.4.4
 

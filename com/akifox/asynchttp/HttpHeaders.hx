@@ -40,7 +40,6 @@ class HttpHeaders {
   public function new(headers:Dynamic = null) {
     if (headers == null) return;
 
-    trace(Type.getClassName(Type.getClass(headers)));
     switch (Type.getClassName(Type.getClass(headers))) {
       case 'com.akifox.asynchttp.HttpHeaders' | 'HttpHeaders':
         for (key in cast(headers, HttpHeaders).keys()) {

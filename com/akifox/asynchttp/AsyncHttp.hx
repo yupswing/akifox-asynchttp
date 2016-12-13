@@ -325,6 +325,10 @@ class AsyncHttp {
         log('HTTP > User-Agent:$userAgent', request.fingerprint);
         s.output.writeString('Host:${url.host}\r\n');
         log('HTTP > Host:${url.host}', request.fingerprint);
+        if (request.http11) {
+          // tell the server we want to close the connection after the request
+          s.output.writeString('Connection: close\r\n');
+        }
 
         if (request.headers != null) {
           //custom headers
