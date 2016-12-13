@@ -1,6 +1,10 @@
 
 # Changelog
 
+## What's new 0.4.5
+
+- Fixed close connection using HTTP/1.1 (thanks to PaulGene https://github.com/yupswing/akifox-asynchttp/issues/32)
+
 ## What's new 0.4.4
 
 - Using Haxe 3.3 allow support for SSL in most platform out of the box

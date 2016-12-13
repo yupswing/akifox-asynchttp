@@ -1,9 +1,9 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.4-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.5-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203.3+-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.4.4-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.4.5-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 ## BREAKING API VERSION 0.4
 If you were using akifox-asynchttp, please check what have changed in the new version 0.4 and update your code as explained [here](CHANGELOG.md#whats-new-040-breaking-api)
@@ -47,17 +47,16 @@ import com.akifox.asynchttp.*;
 ```
 
 compile with
-```-lib akifox-asynchttp```
-
-and add the hxssl library (only needed on NEKO/CPP) to have SSL support
-```-lib hxssl```
+```
+-lib akifox-asynchttp
+```
 
 ### Use it in OpenFL Projects
+
 After installing the library via Haxelib, add the library reference in your ```project.xml```
 
 ```
 <haxelib name="akifox-asynchttp" />
-<haxelib name="hxssl" />
 ```
 
 and finally you can import it in your project files
@@ -381,8 +380,13 @@ A simple example to show the callbackProgress optional callback
 [Check it out](/samples/openfl/)
 
 The example shows how to load a picture from an URL and display it on stage as Bitmap
+(The HAXE logo is loaded via HTTPS the other two images via HTTP)
+
+It supports most of the targets (for sure neko, android and ios)
 
 NOTE: This example works only with OpenFL because it supports decoding of images (Jpeg, PNG and GIF) from raw bytes data.
+
+Also, you can use the library to load any kind of data, not just images, exactly like in the other examples.
 
 ## Write to a file the response
 If you want to write in a file the response content you can use this snippet.
