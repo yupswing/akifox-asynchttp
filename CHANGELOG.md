@@ -3,7 +3,7 @@
 
 ## What's new 0.4.6
 
-- #TODO
+- Fixed crash when no connection on Android
 
 ## What's new 0.4.5
 
