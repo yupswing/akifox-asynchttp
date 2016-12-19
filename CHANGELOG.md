@@ -1,6 +1,10 @@
 
 # Changelog
 
+## What's new 0.4.7
+
+- #TODO
+
 ## What's new 0.4.6
 
 - Fixed crash when no connection on Android
