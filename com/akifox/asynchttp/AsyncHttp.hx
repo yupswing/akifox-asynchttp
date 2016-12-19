@@ -295,7 +295,6 @@ class AsyncHttp {
     } else {
       s = new SocketTCP();
     }
-    s.setTimeout(request.timeout);
 
     // -- START REQUEST
 
@@ -303,6 +302,7 @@ class AsyncHttp {
     log('Request\n> ${request.method} ${url}',
       request.fingerprint);
     try {
+      s.setTimeout(request.timeout);
 #if flash
       s.connect(url.host, url.port);
 #else

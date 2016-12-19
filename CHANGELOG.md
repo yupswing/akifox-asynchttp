@@ -1,6 +1,10 @@
 
 # Changelog
 
+## What's new 0.4.6
+
+- Fixed crash when no connection on Android
+
 ## What's new 0.4.5
 
 - Fixed close connection using HTTP/1.1 (thanks to PaulGene https://github.com/yupswing/akifox-asynchttp/issues/32)
