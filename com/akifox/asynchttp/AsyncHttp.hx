@@ -5,7 +5,7 @@ package com.akifox.asynchttp;
 
 @licence MIT Licence
 
-@version 0.4.5
+@version 0.4.7
 [Public repository](https://github.com/yupswing/akifox-asynchttp/)
 
 #### Asyncronous HTTP+HTTPS Request HAXE Library
@@ -103,6 +103,7 @@ private enum HttpTransferMode {
   UNDEFINED;
   FIXED;
   CHUNKED;
+  NO_CONTENT;
 }
 
 @:dox(hide)
@@ -478,8 +479,11 @@ class AsyncHttp {
       contentLength = Std.parseInt(headers.get('content-length'));
 
       // determine transfer mode
-      var mode:HttpTransferMode = HttpTransferMode.UNDEFINED;
-      if (contentLength > 0) mode = HttpTransferMode.FIXED;
+      var mode:HttpTransferMode = HttpTransferMode.NO_CONTENT;
+      if (contentLength > 0)
+        mode = HttpTransferMode.FIXED;
+      else if(status < 400)
+        mode = HttpTransferMode.UNDEFINED;
       if (headers.get('transfer-encoding') == 'chunked') mode = HttpTransferMode.CHUNKED;
       log('Transfer mode -> $mode', request.fingerprint);
 
@@ -558,6 +562,9 @@ class AsyncHttp {
 
           buffer = null;
           bytes = null;
+
+        case HttpTransferMode.NO_CONTENT:
+          errorMessage = error('Transfer failed -> No content');
       }
 
       // The response content is always given in bytes and handled by the HttpResponse object
