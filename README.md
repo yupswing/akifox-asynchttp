@@ -1,9 +1,9 @@
-[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.6-brightgreen.svg)]()
+[![akifox-asynchttp](https://img.shields.io/badge/library-akifox%20asynchttp%200.4.7-brightgreen.svg)]()
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Haxe 3](https://img.shields.io/badge/language-Haxe%203.3+-orange.svg)](http://www.haxe.org)
 
 [![Library](https://img.shields.io/badge/type-haxelib%20library-orange.svg)](http://lib.haxe.org/p/akifox-asynchttp)
-[![Haxelib](https://img.shields.io/badge/distr-v0.4.6-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
+[![Haxelib](https://img.shields.io/badge/distr-v0.4.7-yellow.svg)](http://lib.haxe.org/p/akifox-asynchttp)
 
 ## BREAKING API VERSION 0.4
 If you were using akifox-asynchttp, please check what have changed in the new version 0.4 and update your code as explained [here](CHANGELOG.md#whats-new-040-breaking-api)
@@ -72,8 +72,9 @@ import com.akifox.asynchttp.*;
   - [ ] More platforms (php, python...)? Post a [ticket](https://github.com/yupswing/akifox-asynchttp/issues) if you would like one
 - HTTP Protocol Support
   - Request methods
-    - [x] Support standard methods (GET, POST)
-    - [x] Support restful methods (PUT, DELETE)
+    - [x] Support for standard methods (GET, POST)
+    - [x] Support for restful methods (PUT, DELETE) (Javascript target unsupported)
+    - [x] Library accepts any method (HEAD, CONNECT, OPTIONS, TRACE, PATCH...) (Javascript target unsupported) **[v0.4.7+]**
   - Transfer modes
     - [x] Support unknown transfer mode (HTTP/1.0+)
     - [x] Support fixed content-length transfer mode (HTTP/1.0+)
@@ -115,7 +116,7 @@ import com.akifox.asynchttp.*;
 - *response.isBinary* is always FALSE on the response object
 - *response.headers* is always empty, so don't rely on *response.contentType*
 - you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
-- no support for methods PUT and DELETE
+- *no support* for methods other than POST and GET (limited by haxe.Http request)
 
 ## Documentation
 
@@ -295,7 +296,7 @@ var request = new HttpRequest({
       },
 
   // HttpMethod | The request http method
-  // Values are GET (default), POST, PUT or DELETE
+  // String (constants helper in HttpMethod class)
   // NOTE: Only GET and POST are supported in Javascript
   method : HttpMethod.GET,
 

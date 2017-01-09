@@ -4,8 +4,8 @@
   "license": "MIT",
   "tags": ["cross", "flash", "cpp", "neko", "java", "js", "http", "https", "request", "response", "synchronous", "asynchronous"],
   "description": "Haxe multi-platform Asynchronous HTTP+HTTPS Requests",
-  "version": "0.4.6",
-  "releasenote": "Fixed crash when no connection on Android",
+  "version": "0.4.7",
+  "releasenote": "Support for any HTTP request method (Javascript target excluded)",
   "contributors": ["yupswing"],
   "dependencies": {}
 }
