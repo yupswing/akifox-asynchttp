@@ -72,8 +72,9 @@ import com.akifox.asynchttp.*;
   - [ ] More platforms (php, python...)? Post a [ticket](https://github.com/yupswing/akifox-asynchttp/issues) if you would like one
 - HTTP Protocol Support
   - Request methods
-    - [x] Support standard methods (GET, POST)
-    - [x] Support restful methods (PUT, DELETE)
+    - [x] Support for standard methods (GET, POST)
+    - [x] Support for restful methods (PUT, DELETE) (Javascript target unsupported)
+    - [x] Library accepts any method (HEAD, CONNECT, OPTIONS, TRACE, PATCH...) (Javascript target unsupported) **[v0.4.7+]**
   - Transfer modes
     - [x] Support unknown transfer mode (HTTP/1.0+)
     - [x] Support fixed content-length transfer mode (HTTP/1.0+)
@@ -115,7 +116,7 @@ import com.akifox.asynchttp.*;
 - *response.isBinary* is always FALSE on the response object
 - *response.headers* is always empty, so don't rely on *response.contentType*
 - you have to know what you are going to fetch to parse it as you need (toText(), toJson(), toXml()...)
-- no support for methods PUT and DELETE
+- *no support* for methods other than POST and GET (limited by haxe.Http request)
 
 ## Documentation
 
@@ -295,7 +296,7 @@ var request = new HttpRequest({
       },
 
   // HttpMethod | The request http method
-  // Values are GET (default), POST, PUT or DELETE
+  // String (constants helper in HttpMethod class)
   // NOTE: Only GET and POST are supported in Javascript
   method : HttpMethod.GET,
 
