@@ -1,9 +1,13 @@
 
 # Changelog
 
-## What's new 0.4.7
+## What's new 0.4.8
 
 - #TODO
+
+## What's new 0.4.7
+
+- Any HTTP request method allowed
 
 ## What's new 0.4.6
 
