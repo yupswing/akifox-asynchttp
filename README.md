@@ -120,7 +120,7 @@ import com.akifox.asynchttp.*;
 
 ## Documentation
 
-I strongly suggest to read the Quick Reference to understand how the class works, but if you need a complete documentation about all the library you can read the [Online Documentation](https://dl.dropboxusercontent.com/u/683344/akifox/akifox-asynchttp/docs/index.html)
+I strongly suggest to read the Quick Reference to understand how the class works, but if you need a complete documentation about all the library you can read the [Online Documentation](file:///Users/simo/Dev/haxe/akifox-asynchttp/docs/com/akifox/asynchttp/index.html)
 
 ## Quick reference
 
@@ -295,8 +295,8 @@ var request = new HttpRequest({
 
       },
 
-  // HttpMethod | The request http method
-  // String (constants helper in HttpMethod class)
+  // String | The request http method
+  // (the HttpMethod offers constants for common methods)
   // NOTE: Only GET and POST are supported in Javascript
   method : HttpMethod.GET,
 

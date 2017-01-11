@@ -3,29 +3,30 @@
 
 ## What's new 0.4.8
 
+- Recompiled documentation (added on http://yupswing.github.io/akifox-asynchttp/)
 - #TODO
 
 ## What's new 0.4.7
 
-- Any HTTP request method allowed
+- Allow any HTTP method on requests (Javascript target supports only POST and GET) (thanks to Ohmnivore #35)
 
 ## What's new 0.4.6
 
-- Fixed crash when no connection on Android
+- Fixed crash when no connection on Android (thanks to PaulGene #30)
 
 ## What's new 0.4.5
 
-- Fixed close connection using HTTP/1.1 (thanks to PaulGene https://github.com/yupswing/akifox-asynchttp/issues/32)
+- Fixed close connection using HTTP/1.1 (thanks to PaulGene #32)
 
 ## What's new 0.4.4
 
-- Using Haxe 3.3 allow support for SSL in most platform out of the box
+- Using Haxe 3.3 allow support for SSL in most platform out of the box (thanks to PaulGene #8)
 - Beautify code
 
 ## What's new 0.4.3
 
-- Minor fixes
 - Added callbackProgress
+- Minor fixes
 
 ## What's new 0.4.2
 
@@ -102,10 +103,10 @@ new HttpRequest({url:'urlString',callback:function(response:HttpResponse) { ... 
 
 Fix your code! This edit was necessary to make future improvements easier with less future API changes.
 
-## What's new 0.3.1 (fixed issue #1)
+## What's new 0.3.1
 
 - Timeout option (request)
-- Handling unexpected connection termination
+- Handling unexpected connection termination #1
 
 ## What's new 0.3 *[breaking API]*
 
