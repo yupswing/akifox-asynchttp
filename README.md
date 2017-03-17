@@ -120,7 +120,7 @@ import com.akifox.asynchttp.*;
 
 ## Documentation
 
-I strongly suggest to read the Quick Reference to understand how the class works, but if you need a complete documentation about all the library you can read the [Online Documentation](https://dl.dropboxusercontent.com/u/683344/akifox/akifox-asynchttp/docs/index.html)
+I strongly suggest to read the Quick Reference to understand how the class works, but if you need a complete documentation about all the library you can read the [Online Documentation](http://yupswing.github.io/akifox-asynchttp/com/akifox/asynchttp/index.html)
 
 ## Quick reference
 
