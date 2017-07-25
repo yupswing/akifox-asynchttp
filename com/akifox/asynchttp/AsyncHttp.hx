@@ -484,6 +484,8 @@ class AsyncHttp {
         mode = HttpTransferMode.FIXED;
       else if(status < 400)
         mode = HttpTransferMode.UNDEFINED;
+      else if(headers.get('content-length') == "0")
+        mode = HttpTransferMode.FIXED;
       if (headers.get('transfer-encoding') == 'chunked') mode = HttpTransferMode.CHUNKED;
       log('Transfer mode -> $mode', request.fingerprint);
 
