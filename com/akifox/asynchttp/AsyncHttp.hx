@@ -480,7 +480,7 @@ class AsyncHttp {
 
       // determine transfer mode
       var mode:HttpTransferMode = HttpTransferMode.NO_CONTENT;
-      if (contentLength > 0)
+      if (contentLength > 0 || headers.get('content-length') == "0")
         mode = HttpTransferMode.FIXED;
       else if(status < 400)
         mode = HttpTransferMode.UNDEFINED;
