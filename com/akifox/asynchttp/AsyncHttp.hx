@@ -238,8 +238,11 @@ class AsyncHttp {
 
     #elseif js
 
+    //XHR version
+    httpviaxhr(request);
+
     // Standard Haxe HTTP
-    httpViaHaxeHttp(request);
+    //httpViaHaxeHttp(request);
 
 #end
 
@@ -707,46 +710,61 @@ class AsyncHttp {
 
 #elseif js
 
-  private function httpViaHaxeHttp(request:HttpRequest) {
+  private function httpviaxhr(request:HttpRequest) {
     if (request == null) return;
+
+    var xhr:js.html.XMLHttpRequest = js.Browser.createXMLHttpRequest();
     var start = Timer.stamp();
 
     // RESPONSE FIELDS
     var url:URL = request.url;
     var status:Int = 0;
-    var headers = new HttpHeaders(); //no headers got on haxe.Http (so we make it empty to be coherent)
+    var headers = new HttpHeaders();
     var content:Bytes = null;
-
-    var r = new haxe.Http(url.toString());
-    r.async = request.async;
-    //r.setHeader("User-Agent",userAgent); //TODO disabled because it gives a warning in Chrome
-    if (request.content != null) {
-      r.setPostData(Std.string(request.content));
-    }
 
     var httpstatusDone = false;
 
-    r.onError = function(msg:String) {
-      var errorMessage = error('Request failed -> $msg', request.fingerprint);
+    xhr.onreadystatechange = function(_) {
+      if(xhr.readyState == js.html.XMLHttpRequest.HEADERS_RECEIVED) {
+        status = xhr.status;
+        for(line in xhr.getAllResponseHeaders().split('\n')) {
+          var h = line.split(':');
+          headers.add(h[0], xhr.getResponseHeader(h[0]));
+        }
+        log('Response HTTP Status $status', request.fingerprint);
+        httpstatusDone = true;
+      } else if(xhr.readyState == js.html.XMLHttpRequest.DONE) {
+        var time = elapsedTime(start);
+        content = Bytes.ofString(xhr.responseText);
+        log('Response Complete $status ($time s)\n> ${request.method} ${request.url}', request.fingerprint);
+        this.callback(request, time, url, headers, status, content);
+      }
+    };
+
+    xhr.onerror = function(_) {
+      var errorMessage = error('Request failed -> ', request.fingerprint);
       var time = elapsedTime(start);
       this.callback(request, time, url, headers, status, content, errorMessage);
-    };
-
-    r.onData = function(data:String) {
-      if (!httpstatusDone) status = 200; // see onStatus below
-      var time = elapsedTime(start);
-      content = Bytes.ofString(data);
-      log('Response Complete $status ($time s)\n> ${request.method} ${request.url}', request.fingerprint);
-      this.callback(request, time, url, headers, status, content);
-    };
-
-    r.onStatus = function(http_status:Int) {
-      status = http_status;
-      log('Response HTTP Status $status', request.fingerprint);
-      httpstatusDone = true; // it could not be called (so it will be set on 200 in onData if no onStatus)
     }
 
-    r.request(request.content != null);
+    if(request.timeout != null && request.timeout > 10)xhr.timeout = request.timeout;
+    xhr.withCredentials = false;
+    log('Request\n> ${request.method} ${request.url}', request.fingerprint);
+    xhr.open(request.method, url.toString(), request.async);
+
+    for(h in request.headers.keys()) {
+      xhr.setRequestHeader(h, request.headers.get(h));
+    }
+    if(request.method != 'GET' && request.content != null) {
+      xhr.setRequestHeader('Content-Type', request.contentType);
+    }
+    try{
+      xhr.send(if(request.method != 'GET') request.content else null);
+    } catch (msg:Dynamic) {
+      var time = elapsedTime(start);
+      var errorMessage = error('Request failed -> $msg', request.fingerprint);
+      this.callback(request, time, url, headers, status, content, errorMessage);
+    }
   }
 
 #end
